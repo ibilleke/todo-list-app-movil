@@ -12,47 +12,21 @@ import TaskCard from "../components/TaskCard";
 
 type Props = NativeStackScreenProps<RootStackParamList, "TaskList">;
 
-const MOCK_TASKS: Task[] = [
-  {
-    id: "mock-1",
-    title: "Comprar café",
-    completed: false,
-    createdAt: new Date().toISOString(),
-    source: "local",
-  },
-  {
-    id: "mock-2",
-    title: "Terminar informe semanal",
-    completed: false,
-    createdAt: new Date().toISOString(),
-    source: "local",
-  },
-  {
-    id: "mock-3",
-    title: "Llamar al dentista",
-    completed: true,
-    createdAt: new Date().toISOString(),
-    source: "local",
-  },
-];
-
 export default function TaskListScreen({ navigation }: Props) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
       (async () => {
-        let stored = await getTasks();
-        if (stored.length === 0) {
-          for (const mock of MOCK_TASKS) {
-            await saveTask(mock);
-          }
-          stored = await getTasks();
+        const stored = await getTasks();
+        if (active) {
+          setTasks(stored);
+          setIsLoading(false);
         }
-        if (active) setTasks(stored);
       })();
       return () => {
         active = false;
@@ -118,18 +92,38 @@ export default function TaskListScreen({ navigation }: Props) {
           </Pressable>
         </View>
       )}
-      <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => (
-          <TaskCard
-            task={item}
-            onPress={() => navigation.navigate("TaskForm", { taskId: item.id })}
-            onToggleComplete={() => toggleComplete(item)}
-          />
-        )}
-      />
+      {isLoading ? (
+        <View style={styles.centerState}>
+          <ActivityIndicator color={colors.primary} size="large" />
+        </View>
+      ) : tasks.length === 0 ? (
+        <View style={styles.centerState}>
+          <Ionicons name="checkmark-done-circle-outline" size={64} color={colors.textSecondary} />
+          <Text style={styles.emptyTitle}>No tenés tareas todavía</Text>
+          <Pressable
+            style={styles.emptyPrimaryButton}
+            onPress={() => navigation.navigate("TaskForm", {})}
+          >
+            <Text style={styles.emptyPrimaryButtonText}>Crear tu primera tarea</Text>
+          </Pressable>
+          <Pressable style={styles.emptySecondaryButton} onPress={handleImport}>
+            <Text style={styles.emptySecondaryButtonText}>Importar tareas</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <FlatList
+          data={tasks}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          renderItem={({ item }) => (
+            <TaskCard
+              task={item}
+              onPress={() => navigation.navigate("TaskForm", { taskId: item.id })}
+              onToggleComplete={() => toggleComplete(item)}
+            />
+          )}
+        />
+      )}
       <Pressable
         style={styles.fab}
         onPress={() => navigation.navigate("TaskForm", {})}
@@ -149,6 +143,39 @@ const styles = StyleSheet.create({
   list: {
     padding: spacing.md,
     gap: spacing.sm,
+  },
+  centerState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  emptyTitle: {
+    ...typography.taskTitle,
+    color: colors.textSecondary,
+    marginTop: spacing.sm,
+  },
+  emptyPrimaryButton: {
+    marginTop: spacing.md,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  emptyPrimaryButtonText: {
+    ...typography.body,
+    fontWeight: "700",
+    color: colors.surface,
+  },
+  emptySecondaryButton: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  emptySecondaryButtonText: {
+    ...typography.body,
+    fontWeight: "700",
+    color: colors.primary,
   },
   fab: {
     position: "absolute",
