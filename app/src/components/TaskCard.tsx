@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Image, Pressable, StyleSheet, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { Task } from "../types/Task";
 import { colors, radius, shadow, spacing, typography } from "../theme/colors";
@@ -19,6 +19,7 @@ export default function TaskCard({ task, onPress, onToggleComplete }: Props) {
           color={task.completed ? colors.success : colors.textSecondary}
         />
       </Pressable>
+      {task.photoUri && <Image source={{ uri: task.photoUri }} style={styles.thumbnail} />}
       <Text style={task.completed ? styles.titleCompleted : styles.title} numberOfLines={1}>
         {task.title}
       </Text>
@@ -38,6 +39,11 @@ const styles = StyleSheet.create({
   },
   checkbox: {
     padding: spacing.xs,
+  },
+  thumbnail: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
   },
   title: {
     ...typography.taskTitle,

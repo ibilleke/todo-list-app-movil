@@ -1,6 +1,22 @@
-import { useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, View, Pressable } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import * as Crypto from "expo-crypto";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
+import { Directory, File, Paths } from "expo-file-system";
+import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { colors, radius, spacing, typography } from "../theme/colors";
@@ -15,6 +31,11 @@ export default function TaskFormScreen({ navigation, route }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [completed, setCompleted] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | undefined>(undefined);
+  const [showCamera, setShowCamera] = useState(false);
+  const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
+  const cameraRef = useRef<CameraView>(null);
 
   useEffect(() => {
     if (!taskId) return;
@@ -25,6 +46,7 @@ export default function TaskFormScreen({ navigation, route }: Props) {
         setTitle(found.title);
         setDescription(found.description ?? "");
         setCompleted(found.completed);
+        setPhotoUri(found.photoUri);
       }
     })();
   }, [taskId]);
@@ -41,6 +63,7 @@ export default function TaskFormScreen({ navigation, route }: Props) {
           title: trimmedTitle,
           description: description.trim() || undefined,
           completed,
+          photoUri,
         }
       : {
           id: Crypto.randomUUID(),
@@ -49,6 +72,7 @@ export default function TaskFormScreen({ navigation, route }: Props) {
           completed,
           createdAt: new Date().toISOString(),
           source: "local",
+          photoUri,
         };
     await saveTask(task);
     navigation.goBack();
@@ -67,6 +91,42 @@ export default function TaskFormScreen({ navigation, route }: Props) {
         },
       },
     ]);
+  };
+
+  const handleAddPhoto = async () => {
+    let currentPermission = permission;
+    if (!currentPermission?.granted) {
+      currentPermission = await requestPermission();
+    }
+    if (!currentPermission?.granted) {
+      Alert.alert(
+        "Permiso de cámara denegado",
+        "No se pudo acceder a la cámara. Podés guardar la tarea sin foto."
+      );
+      return;
+    }
+    setShowCamera(true);
+  };
+
+  const handleCapture = async () => {
+    const photo = await cameraRef.current?.takePictureAsync({ quality: 0.8 });
+    setShowCamera(false);
+    if (!photo) return;
+    setIsProcessingPhoto(true);
+    try {
+      const isLandscape = photo.width >= photo.height;
+      const manipulated = await ImageManipulator.manipulate(photo.uri)
+        .resize(isLandscape ? { width: 1080 } : { height: 1080 })
+        .renderAsync();
+      const saved = await manipulated.saveAsync({ compress: 0.7, format: SaveFormat.JPEG });
+      const photosDir = new Directory(Paths.document, "photos");
+      if (!photosDir.exists) photosDir.create();
+      const savedFile = new File(saved.uri);
+      await savedFile.move(photosDir);
+      setPhotoUri(savedFile.uri);
+    } finally {
+      setIsProcessingPhoto(false);
+    }
   };
 
   return (
@@ -91,6 +151,19 @@ export default function TaskFormScreen({ navigation, route }: Props) {
         numberOfLines={4}
       />
 
+      <Text style={styles.label}>Foto</Text>
+      {photoUri && <Image source={{ uri: photoUri }} style={styles.photoPreview} />}
+      {isProcessingPhoto ? (
+        <ActivityIndicator color={colors.primary} style={styles.photoButton} />
+      ) : (
+        <Pressable style={styles.photoButton} onPress={handleAddPhoto}>
+          <Ionicons name="camera" size={18} color={colors.primary} />
+          <Text style={styles.photoButtonText}>
+            {photoUri ? "Reemplazar foto" : "Agregar foto"}
+          </Text>
+        </Pressable>
+      )}
+
       <View style={styles.switchRow}>
         <Text style={styles.label}>Completada</Text>
         <Switch
@@ -109,6 +182,23 @@ export default function TaskFormScreen({ navigation, route }: Props) {
           <Text style={styles.deleteButtonText}>Eliminar</Text>
         </Pressable>
       )}
+
+      <Modal visible={showCamera} animationType="slide">
+        {showCamera && (
+          <View style={styles.cameraContainer}>
+            <CameraView ref={cameraRef} style={styles.camera} facing="back" />
+            <View style={styles.cameraControls}>
+              <Pressable style={styles.cameraCancelButton} onPress={() => setShowCamera(false)}>
+                <Ionicons name="close" size={28} color={colors.surface} />
+              </Pressable>
+              <Pressable style={styles.captureButton} onPress={handleCapture}>
+                <View style={styles.captureButtonInner} />
+              </Pressable>
+              <View style={styles.cameraCancelButton} />
+            </View>
+          </View>
+        )}
+      </Modal>
     </ScrollView>
   );
 }
@@ -165,5 +255,60 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     ...typography.taskTitle,
     color: colors.surface,
+  },
+  photoButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  photoButtonText: {
+    ...typography.body,
+    color: colors.primary,
+  },
+  photoPreview: {
+    width: "100%",
+    height: 180,
+    borderRadius: radius.md,
+    marginBottom: spacing.sm,
+  },
+  cameraContainer: {
+    flex: 1,
+    backgroundColor: "#000",
+  },
+  camera: {
+    flex: 1,
+  },
+  cameraControls: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: spacing.lg,
+  },
+  cameraCancelButton: {
+    width: 44,
+    height: 44,
+  },
+  captureButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 4,
+    borderColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  captureButtonInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.surface,
   },
 });
