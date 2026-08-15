@@ -35,6 +35,15 @@
           "microphonePermission": false,
           "recordAudioAndroid": false
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Permitir que $(PRODUCT_NAME) acceda a tu ubicación para adjuntarla a las tareas.",
+          "locationWhenInUsePermission": "Permitir que $(PRODUCT_NAME) acceda a tu ubicación para adjuntarla a las tareas.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isIosBackgroundLocationEnabled": false
+        }
       ]
     ]
   }

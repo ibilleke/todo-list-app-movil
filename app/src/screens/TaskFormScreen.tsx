@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import * as Crypto from "expo-crypto";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import * as Location from "expo-location";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { Directory, File, Paths } from "expo-file-system";
 import { Ionicons } from "@expo/vector-icons";
@@ -35,6 +36,11 @@ export default function TaskFormScreen({ navigation, route }: Props) {
   const [showCamera, setShowCamera] = useState(false);
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
+  const [location, setLocation] = useState<{ latitude: number; longitude: number } | undefined>(
+    undefined
+  );
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+  const [locationPermission, requestLocationPermission] = Location.useForegroundPermissions();
   const cameraRef = useRef<CameraView>(null);
 
   useEffect(() => {
@@ -47,6 +53,7 @@ export default function TaskFormScreen({ navigation, route }: Props) {
         setDescription(found.description ?? "");
         setCompleted(found.completed);
         setPhotoUri(found.photoUri);
+        setLocation(found.location);
       }
     })();
   }, [taskId]);
@@ -64,6 +71,7 @@ export default function TaskFormScreen({ navigation, route }: Props) {
           description: description.trim() || undefined,
           completed,
           photoUri,
+          location,
         }
       : {
           id: Crypto.randomUUID(),
@@ -73,6 +81,7 @@ export default function TaskFormScreen({ navigation, route }: Props) {
           createdAt: new Date().toISOString(),
           source: "local",
           photoUri,
+          location,
         };
     await saveTask(task);
     navigation.goBack();
@@ -129,6 +138,29 @@ export default function TaskFormScreen({ navigation, route }: Props) {
     }
   };
 
+  const handleUseLocation = async () => {
+    let currentPermission = locationPermission;
+    if (!currentPermission?.granted) {
+      currentPermission = await requestLocationPermission();
+    }
+    if (!currentPermission?.granted) {
+      Alert.alert(
+        "Permiso de ubicación denegado",
+        "No se pudo acceder a la ubicación. Podés guardar la tarea sin ella."
+      );
+      return;
+    }
+    setIsFetchingLocation(true);
+    try {
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      setLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+    } finally {
+      setIsFetchingLocation(false);
+    }
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.label}>Título</Text>
@@ -160,6 +192,22 @@ export default function TaskFormScreen({ navigation, route }: Props) {
           <Ionicons name="camera" size={18} color={colors.primary} />
           <Text style={styles.photoButtonText}>
             {photoUri ? "Reemplazar foto" : "Agregar foto"}
+          </Text>
+        </Pressable>
+      )}
+
+      <Text style={styles.label}>Ubicación</Text>
+      {isFetchingLocation ? (
+        <ActivityIndicator color={colors.primary} style={styles.photoButton} />
+      ) : (
+        <Pressable style={styles.photoButton} onPress={handleUseLocation}>
+          <Ionicons
+            name={location ? "checkmark-circle" : "location"}
+            size={18}
+            color={location ? colors.success : colors.primary}
+          />
+          <Text style={[styles.photoButtonText, location && styles.locationAddedText]}>
+            {location ? "Ubicación agregada ✓" : "Usar ubicación actual"}
           </Text>
         </Pressable>
       )}
@@ -310,5 +358,8 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     backgroundColor: colors.surface,
+  },
+  locationAddedText: {
+    color: colors.success,
   },
 });

@@ -23,6 +23,7 @@ export default function TaskCard({ task, onPress, onToggleComplete }: Props) {
       <Text style={task.completed ? styles.titleCompleted : styles.title} numberOfLines={1}>
         {task.title}
       </Text>
+      {task.location && <Ionicons name="location" size={18} color={colors.textSecondary} />}
     </Pressable>
   );
 }
