@@ -1,0 +1,81 @@
+# Diseño (Frontend / UI-UX): To Do List
+
+Dirección visual: **moderno y amigable** — violeta + coral sobre fondo cálido, bordes redondeados, espaciado generoso.
+
+---
+
+## 1. Navegación y pantallas
+
+Librería: **React Navigation** (Stack Navigator). Dos pantallas, sin más.
+
+```
+Stack Navigator
+├── TaskListScreen (home)
+│     - Lista de tareas (FlatList)
+│     - Botón "+" flotante (FAB) → TaskFormScreen, modo crear
+│     - Botón "Importar de JSONPlaceholder" en el header
+│     - Tap en tarea → TaskFormScreen, modo editar/ver
+│
+└── TaskFormScreen (crear + editar + ver, combinada)
+      - Campos: título, descripción
+      - Botón "Agregar foto" (expo-camera)
+      - Botón "Usar ubicación actual" (expo-location)
+      - Switch "Completada"
+      - Botón "Guardar" / "Eliminar"
+```
+
+---
+
+## 2. Paleta de colores y tipografía
+
+| Uso | Color |
+|---|---|
+| Primario (botón +, acciones, header) | `#7C3AED` violeta |
+| Acento secundario (badges, destacados) | `#FF6B6B` coral |
+| Fondo | `#FFFBF5` crema cálido |
+| Superficie / tarjeta | `#FFFFFF` |
+| Texto principal | `#292524` (marrón oscuro, no negro puro) |
+| Texto secundario | `#78716C` |
+| Tarea completada (texto + tachado) | `#A8A29E` |
+| Éxito / check | `#22C55E` |
+| Error / eliminar | `#EF4444` |
+
+**Tipografía**: system default (San Francisco en iOS, Roboto en Android) — sin fuente custom.
+- Títulos de tarea: bold, 16–18px
+- Body / descripción: regular, 14px
+- Labels / secundario: regular, 12–13px, color texto secundario
+
+**Forma**: `borderRadius: 12-16`, sombra suave en tarjetas (`elevation: 2` / `shadowOpacity: 0.08`), `padding: 16`.
+
+---
+
+## 3. Componentes UI clave
+
+- **TaskCard** (tarjeta en TaskListScreen): checkbox de completada, título, thumbnail redondeado de foto si existe, ícono de ubicación si tiene GPS, texto tachado + `#A8A29E` si completada.
+- **FAB**: botón flotante "+", color `#7C3AED`, esquina inferior derecha → abre TaskFormScreen en modo crear.
+- **ImportButton**: ícono en el header de TaskListScreen, dispara importación desde JSONPlaceholder.
+- **TaskForm** (dentro de TaskFormScreen):
+  - Input título (obligatorio)
+  - Textarea descripción (opcional)
+  - Botón "Agregar foto" → abre cámara; si ya hay foto, muestra preview con opción de reemplazar
+  - Botón "Usar ubicación actual" → si ya hay ubicación, muestra "Ubicación agregada ✓" en vez de coordenadas crudas
+  - Switch "Completada"
+  - Botón "Guardar" (primario) y "Eliminar" (`#FF6B6B`, solo visible en modo editar)
+
+---
+
+## 4. Flujo de permisos (cámara / GPS)
+
+- Solicitud **lazy**: se pide el permiso recién al tocar "Agregar foto" o "Usar ubicación actual", nunca al abrir la app.
+- **Concede** → se ejecuta la acción (abre cámara / captura coordenadas) y el resultado se guarda en el campo correspondiente.
+- **Rechaza en el momento** → se cancela solo esa acción puntual: mensaje corto vía `Alert` nativo de React Native (sin librería extra), el formulario sigue editable sin ese dato.
+- **Rechaza permanentemente** ("No preguntar de nuevo") → mismo mensaje corto, sin forzar ni redirigir a Settings (fuera de alcance actual).
+- Ningún permiso bloquea guardar la tarea — `photoUri` y `location` son opcionales en el modelo de datos.
+
+---
+
+## 5. Estados de UI
+
+- **Vacío** (sin tareas): ícono grande + "No tenés tareas todavía" + botones "Crear tu primera tarea" / "Importar tareas".
+- **Cargando**: `ActivityIndicator` color `#7C3AED` durante importación inicial o guardado de foto; no bloquea toda la pantalla salvo en el import inicial.
+- **Error** (falla de red al importar): mensaje corto + botón "Reintentar"; las tareas locales ya guardadas siguen visibles y usables — la app nunca se rompe por un fallo de red.
