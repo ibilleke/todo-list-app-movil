@@ -10,4 +10,5 @@ export type Task = {
     longitude: number;
   };
   source: "local" | "jsonplaceholder"; // distingue tareas creadas vs importadas
+  syncedAt?: string; // ISO date de la última sincronización remota exitosa (POST a JSONPlaceholder)
 };

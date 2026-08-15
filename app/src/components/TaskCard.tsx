@@ -24,6 +24,7 @@ export default function TaskCard({ task, onPress, onToggleComplete }: Props) {
         {task.title}
       </Text>
       {task.location && <Ionicons name="location" size={18} color={colors.textSecondary} />}
+      {task.syncedAt && <Ionicons name="cloud-done-outline" size={18} color={colors.success} />}
     </Pressable>
   );
 }

@@ -13,7 +13,7 @@ Stack Navigator
 ├── TaskListScreen (home)
 │     - Lista de tareas (FlatList)
 │     - Botón "+" flotante (FAB) → TaskFormScreen, modo crear
-│     - Botón "Importar de JSONPlaceholder" en el header
+│     - Botones "Importar de JSONPlaceholder" y "Sincronizar" en el header
 │     - Tap en tarea → TaskFormScreen, modo editar/ver
 │
 └── TaskFormScreen (crear + editar + ver, combinada)
@@ -51,9 +51,9 @@ Stack Navigator
 
 ## 3. Componentes UI clave
 
-- **TaskCard** (tarjeta en TaskListScreen): checkbox de completada, título, thumbnail redondeado de foto si existe, ícono de ubicación si tiene GPS, texto tachado + `#A8A29E` si completada.
+- **TaskCard** (tarjeta en TaskListScreen): checkbox de completada, título, thumbnail redondeado de foto si existe, ícono de ubicación si tiene GPS, ícono de nube si está sincronizada (`syncedAt`), texto tachado + `#A8A29E` si completada.
 - **FAB**: botón flotante "+", color `#7C3AED`, esquina inferior derecha → abre TaskFormScreen en modo crear.
-- **ImportButton**: ícono en el header de TaskListScreen, dispara importación desde JSONPlaceholder.
+- **ImportButton** / **SyncButton**: íconos en el header de TaskListScreen (descarga = importar desde JSONPlaceholder, subida = sincronizar tareas locales pendientes vía `POST`).
 - **TaskForm** (dentro de TaskFormScreen):
   - Input título (obligatorio)
   - Textarea descripción (opcional)
@@ -77,5 +77,5 @@ Stack Navigator
 ## 5. Estados de UI
 
 - **Vacío** (sin tareas): ícono grande + "No tenés tareas todavía" + botones "Crear tu primera tarea" / "Importar tareas".
-- **Cargando**: `ActivityIndicator` color `#7C3AED` durante importación inicial o guardado de foto; no bloquea toda la pantalla salvo en el import inicial.
-- **Error** (falla de red al importar): mensaje corto + botón "Reintentar"; las tareas locales ya guardadas siguen visibles y usables — la app nunca se rompe por un fallo de red.
+- **Cargando**: `ActivityIndicator` color `#7C3AED` durante importación inicial, sincronización o guardado de foto; no bloquea toda la pantalla salvo en el import/sync inicial.
+- **Error** (falla de red al importar o sincronizar): mensaje corto + botón "Reintentar"; las tareas locales ya guardadas siguen visibles y usables — la app nunca se rompe por un fallo de red.

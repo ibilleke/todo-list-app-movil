@@ -6,7 +6,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { colors, radius, shadow, spacing, typography } from "../theme/colors";
 import { getTasks, saveTask } from "../storage/taskStorage";
-import { fetchTodos } from "../api/jsonPlaceholder";
+import { fetchTodos, syncTask } from "../api/jsonPlaceholder";
 import type { Task } from "../types/Task";
 import TaskCard from "../components/TaskCard";
 
@@ -16,6 +16,8 @@ export default function TaskListScreen({ navigation }: Props) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useFocusEffect(
@@ -69,18 +71,46 @@ export default function TaskListScreen({ navigation }: Props) {
     }
   };
 
+  const handleSync = async () => {
+    setSyncError(null);
+    setIsSyncing(true);
+    try {
+      const current = await getTasks();
+      const pending = current.filter((t) => t.source === "local" && !t.syncedAt);
+      for (const task of pending) {
+        await syncTask(task);
+        await saveTask({ ...task, syncedAt: new Date().toISOString() });
+      }
+      setTasks(await getTasks());
+    } catch {
+      setSyncError("No se pudo sincronizar. Revisá tu conexión.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRight: () =>
-        isImporting ? (
-          <ActivityIndicator color={colors.surface} style={styles.headerButton} />
-        ) : (
-          <Pressable style={styles.headerButton} onPress={handleImport} hitSlop={8}>
-            <Ionicons name="cloud-download-outline" size={24} color={colors.surface} />
-          </Pressable>
-        ),
+      headerRight: () => (
+        <View style={styles.headerButtonRow}>
+          {isSyncing ? (
+            <ActivityIndicator color={colors.surface} style={styles.headerButton} />
+          ) : (
+            <Pressable style={styles.headerButton} onPress={handleSync} hitSlop={8}>
+              <Ionicons name="cloud-upload-outline" size={24} color={colors.surface} />
+            </Pressable>
+          )}
+          {isImporting ? (
+            <ActivityIndicator color={colors.surface} style={styles.headerButton} />
+          ) : (
+            <Pressable style={styles.headerButton} onPress={handleImport} hitSlop={8}>
+              <Ionicons name="cloud-download-outline" size={24} color={colors.surface} />
+            </Pressable>
+          )}
+        </View>
+      ),
     });
-  }, [navigation, isImporting]);
+  }, [navigation, isImporting, isSyncing]);
 
   return (
     <View style={styles.container}>
@@ -88,6 +118,14 @@ export default function TaskListScreen({ navigation }: Props) {
         <View style={styles.errorBanner}>
           <Text style={styles.errorText}>{importError}</Text>
           <Pressable style={styles.retryButton} onPress={handleImport}>
+            <Text style={styles.retryButtonText}>Reintentar</Text>
+          </Pressable>
+        </View>
+      )}
+      {syncError && (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorText}>{syncError}</Text>
+          <Pressable style={styles.retryButton} onPress={handleSync}>
             <Text style={styles.retryButtonText}>Reintentar</Text>
           </Pressable>
         </View>
@@ -188,6 +226,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     ...shadow.card,
+  },
+  headerButtonRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   headerButton: {
     marginRight: spacing.md,

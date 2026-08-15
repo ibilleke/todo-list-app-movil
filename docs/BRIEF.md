@@ -13,7 +13,7 @@ Aplicación móvil para registrar y visualizar una lista de tareas pendientes, c
 | Android package | `com.ignac.todolist` |
 | Backend | Ninguno — Node.js es solo tooling de desarrollo (Expo CLI, pnpm) |
 | Persistencia | Local, `AsyncStorage` + `expo-file-system` (sin backend remoto por ahora) |
-| API externa | JSONPlaceholder (solo importación, no persiste escrituras) |
+| API externa | JSONPlaceholder (importación + sincronización de tareas locales vía POST) |
 | Testing | Jest + jest-expo |
 | Roadmap | Migración a Firebase Firestore para sync remota real |
 
@@ -29,9 +29,10 @@ Aplicación móvil para registrar y visualizar una lista de tareas pendientes, c
 
 ### 2. Integración con servicios web y APIs
 - Importar tareas desde **JSONPlaceholder** (`jsonplaceholder.typicode.com/todos`) para poblar la lista inicial.
-- ⚠️ JSONPlaceholder no persiste escrituras (POST/PUT/DELETE no se guardan server-side) → no sirve como almacenamiento remoto real.
-- Por eso, toda tarea creada o editada (incluyendo foto/GPS) se guarda **localmente** en el dispositivo (`AsyncStorage`) — obligatorio, no opcional, dado el punto anterior.
-- Migración futura a **Firebase Firestore** para sincronización remota real — ver Roadmap.
+- Sincronizar tareas locales hacia **JSONPlaceholder** vía `POST /todos` — botón "Sincronizar" en el header, marca cada tarea con `syncedAt` al recibir `201`.
+- ⚠️ JSONPlaceholder no persiste escrituras (POST/PUT/DELETE no se guardan server-side) → la sincronización demuestra la integración (llamada real, respuesta `201`), pero no sirve como almacenamiento remoto real.
+- Por eso, toda tarea creada o editada (incluyendo foto/GPS) se guarda **localmente** en el dispositivo (`AsyncStorage`) como fuente de verdad — obligatorio, no opcional.
+- Migración futura a **Firebase Firestore** para sincronización remota real y persistente — ver Roadmap.
 
 ### 3. Pruebas automatizadas
 - Framework: **Jest** + preset **jest-expo**, mockeando `expo-camera` y `expo-location`.
@@ -55,6 +56,7 @@ type Task = {
     longitude: number;
   };
   source: "local" | "jsonplaceholder"; // distingue tareas creadas vs importadas
+  syncedAt?: string;      // ISO date de la última sincronización remota exitosa
 };
 ```
 
