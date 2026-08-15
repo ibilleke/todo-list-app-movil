@@ -1,11 +1,13 @@
 import { useCallback, useState } from "react";
-import { StyleSheet, Text, View, FlatList } from "react-native";
+import { StyleSheet, View, FlatList, Pressable } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
-import { colors, spacing, typography } from "../theme/colors";
+import { colors, radius, shadow, spacing } from "../theme/colors";
 import { getTasks, saveTask } from "../storage/taskStorage";
 import type { Task } from "../types/Task";
+import TaskCard from "../components/TaskCard";
 
 type Props = NativeStackScreenProps<RootStackParamList, "TaskList">;
 
@@ -55,6 +57,12 @@ export default function TaskListScreen({ navigation }: Props) {
     }, [])
   );
 
+  const toggleComplete = async (task: Task) => {
+    const updated = { ...task, completed: !task.completed };
+    await saveTask(updated);
+    setTasks((current) => current.map((t) => (t.id === updated.id ? updated : t)));
+  };
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -62,14 +70,20 @@ export default function TaskListScreen({ navigation }: Props) {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
-          <Text
-            style={item.completed ? styles.itemCompleted : styles.item}
+          <TaskCard
+            task={item}
             onPress={() => navigation.navigate("TaskForm", { taskId: item.id })}
-          >
-            {item.title}
-          </Text>
+            onToggleComplete={() => toggleComplete(item)}
+          />
         )}
       />
+      <Pressable
+        style={styles.fab}
+        onPress={() => navigation.navigate("TaskForm", {})}
+        hitSlop={8}
+      >
+        <Ionicons name="add" size={28} color={colors.surface} />
+      </Pressable>
     </View>
   );
 }
@@ -78,20 +92,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    padding: spacing.md,
   },
   list: {
+    padding: spacing.md,
     gap: spacing.sm,
   },
-  item: {
-    ...typography.body,
-    color: colors.textPrimary,
-    paddingVertical: spacing.sm,
-  },
-  itemCompleted: {
-    ...typography.body,
-    color: colors.completed,
-    textDecorationLine: "line-through",
-    paddingVertical: spacing.sm,
+  fab: {
+    position: "absolute",
+    right: spacing.lg,
+    bottom: spacing.lg,
+    width: 56,
+    height: 56,
+    borderRadius: radius.lg + 12,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadow.card,
   },
 });
