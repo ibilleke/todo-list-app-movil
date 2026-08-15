@@ -239,7 +239,11 @@ export default function TaskFormScreen({ navigation, route }: Props) {
               <Pressable style={styles.cameraCancelButton} onPress={() => setShowCamera(false)}>
                 <Ionicons name="close" size={28} color={colors.surface} />
               </Pressable>
-              <Pressable style={styles.captureButton} onPress={handleCapture}>
+              <Pressable
+                testID="capture-button"
+                style={styles.captureButton}
+                onPress={handleCapture}
+              >
                 <View style={styles.captureButtonInner} />
               </Pressable>
               <View style={styles.cameraCancelButton} />
