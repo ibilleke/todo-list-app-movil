@@ -66,7 +66,7 @@ MainStack (con sesión)
 - **TaskCard** (tarjeta en TaskListScreen): checkbox de completada, título, thumbnail redondeado de foto si existe, ícono de ubicación si tiene GPS, ícono de nube si está sincronizada (`syncedAt`), texto tachado + `#A8A29E` si completada.
 - **FAB**: botón flotante "+", color `#7C3AED`, esquina inferior derecha → abre TaskFormScreen en modo crear.
 - **ImportButton** / **SyncButton**: íconos en el header de TaskListScreen (descarga = importar desde JSONPlaceholder, subida = sincronizar tareas locales pendientes vía `POST`).
-- **LoginForm** / **RegisterForm** (dentro de LoginScreen/RegisterScreen): input usuario, input contraseña (`secureTextEntry`), botón primario ("Ingresar"/"Registrarme"), mensaje de error corto inline bajo el form (no `Alert`), link secundario al otro flujo (login ↔ registro).
+- **AuthHero** (dentro de LoginScreen/RegisterScreen): franja violeta superior con 3 "chips" flotantes estilo `TaskCard` (checkbox + título corto, una marcada) que entran con una animación breve de aparición (respeta "reducir movimiento" del sistema), un anillo decorativo y el wordmark "To Do List" + tagline. Debajo, una hoja color crema con esquinas superiores redondeadas (`borderRadius: 32`) que se superpone al hero, contiene: heading ("Bienvenido de nuevo" / "Creá tu cuenta"), inputs con ícono (`person-outline` / `lock-closed-outline`), botón primario, mensaje de error corto inline bajo el form (no `Alert`), link secundario al otro flujo (login ↔ registro).
 - **TaskForm** (dentro de TaskFormScreen):
   - Input título (obligatorio)
   - Textarea descripción (opcional)

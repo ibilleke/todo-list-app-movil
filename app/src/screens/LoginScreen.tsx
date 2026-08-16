@@ -4,14 +4,18 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  StyleSheet,
+  ScrollView,
   Text,
   TextInput,
+  View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
-import { colors, radius, spacing, typography } from "../theme/colors";
+import { colors } from "../theme/colors";
+import { authStyles } from "../theme/authStyles";
 import { useAuth } from "../auth/AuthContext";
+import AuthHero from "../components/AuthHero";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Login">;
 
@@ -35,97 +39,65 @@ export default function LoginScreen({ navigation }: Props) {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <Text style={styles.title}>To Do List</Text>
+    <View style={authStyles.screen}>
+      <KeyboardAvoidingView
+        style={authStyles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={authStyles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <AuthHero />
+          <View style={authStyles.sheet}>
+            <Text style={authStyles.heading}>Bienvenido de nuevo</Text>
+            <Text style={authStyles.subheading}>Ingresá para ver tus tareas.</Text>
 
-      <Text style={styles.label}>Usuario</Text>
-      <TextInput
-        style={styles.input}
-        value={username}
-        onChangeText={setUsername}
-        placeholder="Usuario"
-        placeholderTextColor={colors.textSecondary}
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
+            <Text style={authStyles.label}>Usuario</Text>
+            <View style={authStyles.inputRow}>
+              <Ionicons name="person-outline" size={18} color={colors.textSecondary} />
+              <TextInput
+                style={authStyles.input}
+                value={username}
+                onChangeText={setUsername}
+                placeholder="Usuario"
+                placeholderTextColor={colors.textSecondary}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
 
-      <Text style={styles.label}>Contraseña</Text>
-      <TextInput
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-        placeholder="Contraseña"
-        placeholderTextColor={colors.textSecondary}
-        secureTextEntry
-      />
+            <Text style={authStyles.label}>Contraseña</Text>
+            <View style={authStyles.inputRow}>
+              <Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} />
+              <TextInput
+                style={authStyles.input}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Contraseña"
+                placeholderTextColor={colors.textSecondary}
+                secureTextEntry
+              />
+            </View>
 
-      {error && <Text style={styles.error}>{error}</Text>}
+            {error && <Text style={authStyles.error}>{error}</Text>}
 
-      {isSubmitting ? (
-        <ActivityIndicator color={colors.primary} style={styles.primaryButton} />
-      ) : (
-        <Pressable style={styles.primaryButton} onPress={handleSubmit}>
-          <Text style={styles.primaryButtonText}>Ingresar</Text>
-        </Pressable>
-      )}
+            {isSubmitting ? (
+              <ActivityIndicator color={colors.primary} style={authStyles.primaryButton} />
+            ) : (
+              <Pressable style={authStyles.primaryButton} onPress={handleSubmit}>
+                <Text style={authStyles.primaryButtonText}>Ingresar</Text>
+              </Pressable>
+            )}
 
-      <Pressable onPress={() => navigation.navigate("Register")} hitSlop={8}>
-        <Text style={styles.link}>Crear cuenta</Text>
-      </Pressable>
-    </KeyboardAvoidingView>
+            <Pressable onPress={() => navigation.navigate("Register")} hitSlop={8}>
+              <Text style={authStyles.link}>
+                ¿No tenés cuenta? <Text style={authStyles.linkStrong}>Creá una</Text>
+              </Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    padding: spacing.lg,
-    backgroundColor: colors.background,
-  },
-  title: {
-    ...typography.taskTitle,
-    fontSize: 28,
-    color: colors.primary,
-    textAlign: "center",
-    marginBottom: spacing.xl,
-  },
-  label: {
-    ...typography.label,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-    marginTop: spacing.md,
-  },
-  input: {
-    ...typography.body,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    color: colors.textPrimary,
-  },
-  error: {
-    ...typography.body,
-    color: colors.error,
-    marginTop: spacing.md,
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    alignItems: "center",
-    marginTop: spacing.lg,
-  },
-  primaryButtonText: {
-    ...typography.taskTitle,
-    color: colors.surface,
-  },
-  link: {
-    ...typography.body,
-    color: colors.primary,
-    textAlign: "center",
-    marginTop: spacing.md,
-  },
-});
