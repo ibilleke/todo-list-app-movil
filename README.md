@@ -82,11 +82,10 @@ MainStack (con sesión)
 
 ```
 Examen2AppMovil/
-├── docs/                      # Brief, diseño, plan e informe del proyecto
+├── docs/                      # Brief, diseño y plan del proyecto
 │   ├── BRIEF.md
 │   ├── DESIGN.md
 │   ├── PLAN.md
-│   ├── INFORME_PROYECTO.pdf   # Informe completo del proyecto
 │   └── pruebas/               # Evidencia de permisos (capturas + informe)
 └── app/                       # Código fuente Expo/React Native
     ├── App.tsx                # Entry point, providers y stack raíz
@@ -158,5 +157,5 @@ Evidencia visual generada en emulador Android (Pixel 7, API 34). Imágenes compl
 - `docs/DESIGN.md` — UI/UX, paleta, componentes, flujos de auth y permisos.
 - `docs/PLAN.md` — plan de implementación.
 - `docs/pruebas/INFORME_PERMISOS.md` — evidencia de pruebas de permisos de cámara y ubicación.
-- `docs/INFORME_PROYECTO.pdf` — informe completo del proyecto.
+- `INFORME_PROYECTO.docx` (Escritorio, fuera del repo) — informe completo del proyecto.
 </content>
