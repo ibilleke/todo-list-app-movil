@@ -9,7 +9,7 @@ import { ImageManipulator } from "expo-image-manipulator";
 import { File } from "expo-file-system";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import TaskFormScreen from "../src/screens/TaskFormScreen";
-import { getTasks } from "../src/storage/taskStorage";
+import { getTasks, saveTask } from "../src/storage/taskStorage";
 import type { RootStackParamList } from "../src/navigation/types";
 
 jest.mock("@react-native-async-storage/async-storage", () =>
@@ -192,5 +192,41 @@ describe("<TaskFormScreen />", () => {
     expect(stored[0].title).toBe("Tarea sin permisos");
     expect(stored[0].photoUri).toBeUndefined();
     expect(stored[0].location).toBeUndefined();
+  });
+
+  test("delete button removes the task from storage and navigates back", async () => {
+    (useCameraPermissions as jest.Mock).mockReturnValue([{ granted: true }, jest.fn()]);
+    (Location.useForegroundPermissions as jest.Mock).mockReturnValue([{ granted: true }, jest.fn()]);
+
+    await saveTask({
+      id: "task-1",
+      userId: "test-user",
+      title: "Tarea a eliminar",
+      completed: false,
+      createdAt: new Date().toISOString(),
+      source: "local",
+    });
+
+    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation((_title, _message, buttons) => {
+      const destructive = buttons?.find((b) => b.style === "destructive");
+      destructive?.onPress?.();
+    });
+
+    const props = buildProps();
+    props.route = {
+      key: "TaskForm",
+      name: "TaskForm",
+      params: { taskId: "task-1" },
+    } as Props["route"];
+    const { getByText } = await renderScreen(props);
+
+    await waitFor(() => expect(getByText("Eliminar")).toBeTruthy());
+    await fireEvent.press(getByText("Eliminar"));
+
+    await waitFor(() => expect(props.navigation.goBack).toHaveBeenCalledTimes(1));
+    const stored = await getTasks("test-user");
+    expect(stored).toHaveLength(0);
+
+    alertSpy.mockRestore();
   });
 });
