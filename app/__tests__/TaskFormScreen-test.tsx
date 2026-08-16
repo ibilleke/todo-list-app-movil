@@ -1,6 +1,7 @@
 import React from "react";
 import { Alert } from "react-native";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCameraPermissions } from "expo-camera";
 import * as Location from "expo-location";
@@ -76,6 +77,21 @@ jest.mock("expo-crypto", () => ({
   randomUUID: () => "fixed-uuid",
 }));
 
+jest.mock("../src/auth/AuthContext", () => ({
+  useAuth: () => ({
+    user: {
+      id: "test-user",
+      username: "tester",
+      passwordHash: "hash",
+      createdAt: "2024-01-01T00:00:00.000Z",
+    },
+    isLoading: false,
+    login: jest.fn(),
+    register: jest.fn(),
+    logout: jest.fn(),
+  }),
+}));
+
 type Props = NativeStackScreenProps<RootStackParamList, "TaskForm">;
 
 function buildProps(): Props {
@@ -87,6 +103,19 @@ function buildProps(): Props {
     } as unknown as Props["navigation"],
     route: { key: "TaskForm", name: "TaskForm", params: {} } as Props["route"],
   };
+}
+
+function renderScreen(props: Props) {
+  return render(
+    <SafeAreaProvider
+      initialMetrics={{
+        frame: { x: 0, y: 0, width: 0, height: 0 },
+        insets: { top: 0, left: 0, right: 0, bottom: 0 },
+      }}
+    >
+      <TaskFormScreen {...props} />
+    </SafeAreaProvider>
+  );
 }
 
 describe("<TaskFormScreen />", () => {
@@ -102,7 +131,7 @@ describe("<TaskFormScreen />", () => {
     mockTakePictureAsync.mockResolvedValue({ uri: "file://raw-photo.jpg", width: 1200, height: 900 });
 
     const props = buildProps();
-    const { getByText, getByTestId, queryByText } = await render(<TaskFormScreen {...props} />);
+    const { getByText, getByTestId, queryByText } = await renderScreen(props);
 
     await fireEvent.press(getByText("Agregar foto"));
     await waitFor(() => expect(getByTestId("capture-button")).toBeTruthy());
@@ -126,7 +155,7 @@ describe("<TaskFormScreen />", () => {
     });
 
     const props = buildProps();
-    const { getByText, queryByText } = await render(<TaskFormScreen {...props} />);
+    const { getByText, queryByText } = await renderScreen(props);
 
     await fireEvent.press(getByText("Usar ubicación actual"));
     await waitFor(() => expect(queryByText("Ubicación agregada ✓")).toBeTruthy());
@@ -146,7 +175,7 @@ describe("<TaskFormScreen />", () => {
     const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => {});
 
     const props = buildProps();
-    const { getByText, getByPlaceholderText } = await render(<TaskFormScreen {...props} />);
+    const { getByText, getByPlaceholderText } = await renderScreen(props);
 
     await fireEvent.press(getByText("Agregar foto"));
     expect(alertSpy).toHaveBeenCalledWith("Permiso de cámara denegado", expect.any(String));
@@ -158,7 +187,7 @@ describe("<TaskFormScreen />", () => {
     await fireEvent.press(getByText("Guardar"));
 
     await waitFor(() => expect(props.navigation.goBack).toHaveBeenCalledTimes(1));
-    const stored = await getTasks();
+    const stored = await getTasks("test-user");
     expect(stored).toHaveLength(1);
     expect(stored[0].title).toBe("Tarea sin permisos");
     expect(stored[0].photoUri).toBeUndefined();

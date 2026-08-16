@@ -23,10 +23,14 @@ import type { RootStackParamList } from "../navigation/types";
 import { colors, radius, spacing, typography } from "../theme/colors";
 import { deleteTask, getTasks, saveTask } from "../storage/taskStorage";
 import type { Task } from "../types/Task";
+import { useAuth } from "../auth/AuthContext";
+import ScreenHeader from "../components/ScreenHeader";
 
 type Props = NativeStackScreenProps<RootStackParamList, "TaskForm">;
 
 export default function TaskFormScreen({ navigation, route }: Props) {
+  const { user } = useAuth();
+  const userId = user!.id; // TaskFormScreen solo se monta dentro de MainNavigator (ver App.tsx), user siempre existe
   const taskId = route.params?.taskId;
   const [existingTask, setExistingTask] = useState<Task | null>(null);
   const [title, setTitle] = useState("");
@@ -46,7 +50,7 @@ export default function TaskFormScreen({ navigation, route }: Props) {
   useEffect(() => {
     if (!taskId) return;
     (async () => {
-      const found = (await getTasks()).find((t) => t.id === taskId) ?? null;
+      const found = (await getTasks(userId)).find((t) => t.id === taskId) ?? null;
       if (found) {
         setExistingTask(found);
         setTitle(found.title);
@@ -56,7 +60,7 @@ export default function TaskFormScreen({ navigation, route }: Props) {
         setLocation(found.location);
       }
     })();
-  }, [taskId]);
+  }, [taskId, userId]);
 
   const handleSave = async () => {
     const trimmedTitle = title.trim();
@@ -75,6 +79,7 @@ export default function TaskFormScreen({ navigation, route }: Props) {
         }
       : {
           id: Crypto.randomUUID(),
+          userId,
           title: trimmedTitle,
           description: description.trim() || undefined,
           completed,
@@ -162,7 +167,16 @@ export default function TaskFormScreen({ navigation, route }: Props) {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <View style={styles.screen}>
+      <ScreenHeader
+        title="Tarea"
+        left={
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()} hitSlop={8}>
+            <Ionicons name="arrow-back" size={22} color={colors.surface} />
+          </Pressable>
+        }
+      />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.label}>Título</Text>
       <TextInput
         style={styles.input}
@@ -251,11 +265,20 @@ export default function TaskFormScreen({ navigation, route }: Props) {
           </View>
         )}
       </Modal>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  backButton: {
+    marginRight: spacing.sm,
+    padding: spacing.xs,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.background,

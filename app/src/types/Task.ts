@@ -1,5 +1,6 @@
 export type Task = {
   id: string; // uuid generado localmente
+  userId: string; // dueño de la tarea (User.id), obligatorio
   title: string; // obligatorio
   description?: string; // opcional
   completed: boolean;

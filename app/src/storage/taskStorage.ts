@@ -3,7 +3,7 @@ import type { Task } from "../types/Task";
 
 const TASKS_KEY = "@todolist/tasks";
 
-export async function getTasks(): Promise<Task[]> {
+async function getAllTasks(): Promise<Task[]> {
   const raw = await AsyncStorage.getItem(TASKS_KEY);
   if (!raw) return [];
   try {
@@ -13,8 +13,13 @@ export async function getTasks(): Promise<Task[]> {
   }
 }
 
+export async function getTasks(userId: string): Promise<Task[]> {
+  const tasks = await getAllTasks();
+  return tasks.filter((t) => t.userId === userId);
+}
+
 export async function saveTask(task: Task): Promise<void> {
-  const tasks = await getTasks();
+  const tasks = await getAllTasks();
   const index = tasks.findIndex((t) => t.id === task.id);
   if (index >= 0) {
     tasks[index] = task;
@@ -25,7 +30,7 @@ export async function saveTask(task: Task): Promise<void> {
 }
 
 export async function deleteTask(id: string): Promise<void> {
-  const tasks = await getTasks();
+  const tasks = await getAllTasks();
   const filtered = tasks.filter((t) => t.id !== id);
   await AsyncStorage.setItem(TASKS_KEY, JSON.stringify(filtered));
 }

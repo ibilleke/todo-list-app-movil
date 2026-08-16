@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, View, FlatList, Pressable, Text } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,10 +9,14 @@ import { getTasks, saveTask } from "../storage/taskStorage";
 import { fetchTodos, syncTask } from "../api/jsonPlaceholder";
 import type { Task } from "../types/Task";
 import TaskCard from "../components/TaskCard";
+import ScreenHeader from "../components/ScreenHeader";
+import { useAuth } from "../auth/AuthContext";
 
 type Props = NativeStackScreenProps<RootStackParamList, "TaskList">;
 
 export default function TaskListScreen({ navigation }: Props) {
+  const { user, logout } = useAuth();
+  const userId = user!.id; // TaskListScreen solo se monta dentro de MainNavigator (ver App.tsx), user siempre existe
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
@@ -24,7 +28,7 @@ export default function TaskListScreen({ navigation }: Props) {
     useCallback(() => {
       let active = true;
       (async () => {
-        const stored = await getTasks();
+        const stored = await getTasks(userId);
         if (active) {
           setTasks(stored);
           setIsLoading(false);
@@ -33,7 +37,7 @@ export default function TaskListScreen({ navigation }: Props) {
       return () => {
         active = false;
       };
-    }, [])
+    }, [userId])
   );
 
   const toggleComplete = async (task: Task) => {
@@ -47,14 +51,15 @@ export default function TaskListScreen({ navigation }: Props) {
     setIsImporting(true);
     try {
       const todos = await fetchTodos();
-      const existing = await getTasks();
+      const existing = await getTasks(userId);
       const importedIds = new Set(
         existing.filter((t) => t.source === "jsonplaceholder").map((t) => t.id)
       );
       const newTasks: Task[] = todos
-        .filter((todo) => !importedIds.has(`jsonplaceholder-${todo.id}`))
+        .filter((todo) => !importedIds.has(`${userId}:jsonplaceholder-${todo.id}`))
         .map((todo) => ({
-          id: `jsonplaceholder-${todo.id}`,
+          id: `${userId}:jsonplaceholder-${todo.id}`,
+          userId,
           title: todo.title,
           completed: todo.completed,
           createdAt: new Date().toISOString(),
@@ -63,7 +68,7 @@ export default function TaskListScreen({ navigation }: Props) {
       for (const task of newTasks) {
         await saveTask(task);
       }
-      setTasks(await getTasks());
+      setTasks(await getTasks(userId));
     } catch {
       setImportError("No se pudo importar. Revisá tu conexión.");
     } finally {
@@ -75,13 +80,13 @@ export default function TaskListScreen({ navigation }: Props) {
     setSyncError(null);
     setIsSyncing(true);
     try {
-      const current = await getTasks();
+      const current = await getTasks(userId);
       const pending = current.filter((t) => t.source === "local" && !t.syncedAt);
       for (const task of pending) {
         await syncTask(task);
         await saveTask({ ...task, syncedAt: new Date().toISOString() });
       }
-      setTasks(await getTasks());
+      setTasks(await getTasks(userId));
     } catch {
       setSyncError("No se pudo sincronizar. Revisá tu conexión.");
     } finally {
@@ -89,31 +94,32 @@ export default function TaskListScreen({ navigation }: Props) {
     }
   };
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <View style={styles.headerButtonRow}>
-          {isSyncing ? (
-            <ActivityIndicator color={colors.surface} style={styles.headerButton} />
-          ) : (
-            <Pressable style={styles.headerButton} onPress={handleSync} hitSlop={8}>
-              <Ionicons name="cloud-upload-outline" size={24} color={colors.surface} />
-            </Pressable>
-          )}
-          {isImporting ? (
-            <ActivityIndicator color={colors.surface} style={styles.headerButton} />
-          ) : (
-            <Pressable style={styles.headerButton} onPress={handleImport} hitSlop={8}>
-              <Ionicons name="cloud-download-outline" size={24} color={colors.surface} />
-            </Pressable>
-          )}
-        </View>
-      ),
-    });
-  }, [navigation, isImporting, isSyncing]);
-
   return (
     <View style={styles.container}>
+      <ScreenHeader
+        title="Mis tareas"
+        right={
+          <View style={styles.headerButtonRow}>
+            {isSyncing ? (
+              <ActivityIndicator color={colors.surface} style={styles.headerButton} />
+            ) : (
+              <Pressable style={styles.headerButton} onPress={handleSync} hitSlop={8}>
+                <Ionicons name="cloud-upload-outline" size={24} color={colors.surface} />
+              </Pressable>
+            )}
+            {isImporting ? (
+              <ActivityIndicator color={colors.surface} style={styles.headerButton} />
+            ) : (
+              <Pressable style={styles.headerButton} onPress={handleImport} hitSlop={8}>
+                <Ionicons name="cloud-download-outline" size={24} color={colors.surface} />
+              </Pressable>
+            )}
+            <Pressable style={styles.headerButton} onPress={logout} hitSlop={8}>
+              <Ionicons name="log-out-outline" size={24} color={colors.surface} />
+            </Pressable>
+          </View>
+        }
+      />
       {importError && (
         <View style={styles.errorBanner}>
           <Text style={styles.errorText}>{importError}</Text>
