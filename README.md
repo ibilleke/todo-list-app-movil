@@ -135,6 +135,23 @@ Dirección visual moderna y amigable: violeta (`#7C3AED`) + coral (`#FF6B6B`) so
 - Migración de auth local a **Firebase Authentication** con sincronización multi-dispositivo.
 - Sincronización en tiempo real entre dispositivos.
 
+## Capturas de pantalla
+
+Evidencia visual generada en emulador Android (Pixel 7, API 34). Imágenes completas en `C:/tmp/imagenes proyecto/`.
+
+| Pantalla | Captura |
+|---|---|
+| Login | ![Login](C:/tmp/imagenes%20proyecto/01_login.png) |
+| Registro | ![Registro](C:/tmp/imagenes%20proyecto/02_registro.png) |
+| Lista de tareas vacía | ![Lista vacía](C:/tmp/imagenes%20proyecto/03_lista_tareas_vacia.png) |
+| Nueva tarea (formulario) | ![Formulario nueva tarea](C:/tmp/imagenes%20proyecto/04_nueva_tarea_form.png) |
+| Nueva tarea completada | ![Nueva tarea completada](C:/tmp/imagenes%20proyecto/05_nueva_tarea_completada.png) |
+| Lista con tarea creada | ![Lista con tarea](C:/tmp/imagenes%20proyecto/06_lista_con_tarea.png) |
+| Lista importada desde JSONPlaceholder | ![Lista importada](C:/tmp/imagenes%20proyecto/07_lista_importada.png) |
+| Editar / eliminar tarea | ![Editar tarea](C:/tmp/imagenes%20proyecto/08_editar_tarea.png) |
+| Login con credenciales incorrectas | ![Login error](C:/tmp/imagenes%20proyecto/09_login_error.png) |
+| Ícono de la app (task switcher) | ![Ícono app](C:/tmp/imagenes%20proyecto/10_icono_app.png) |
+
 ## Documentación adicional
 
 - `docs/BRIEF.md` — alcance, stack y modelo de datos completo.
