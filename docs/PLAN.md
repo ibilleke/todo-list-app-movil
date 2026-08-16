@@ -33,21 +33,33 @@ Basado en `BRIEF.md` y `DESIGN.md`. Cada fase entrega algo corriendo y verificab
 
 ---
 
-## Fase 2 — Persistencia local (AsyncStorage) con datos mock
+## Fase 2 — Autenticación (AuthStack: Login/Register)
 
-1. Instalar `@react-native-async-storage/async-storage`.
-2. Crear `src/storage/taskStorage.ts` con funciones: `getTasks()`, `saveTask(task)`, `deleteTask(id)`.
-3. En `TaskListScreen`, cargar tareas desde storage con `FlatList` (sin UI final todavía, solo `Text` con el título).
-4. Insertar 2-3 tareas de prueba manualmente (hardcodeadas) para verificar que se guardan y leen correctamente entre reinicios de la app.
+1. Instalar `@react-native-async-storage/async-storage` y `expo-crypto`.
+2. Crear `src/types/User.ts` con el tipo `User` (según Modelo de datos del BRIEF).
+3. Crear `src/storage/authStorage.ts`: `getUsers()`, `registerUser(username, password)` (valida usuario único case-insensitive, hashea password con `Crypto.digestStringAsync(SHA256, ...)`), `loginUser(username, password)` (compara `passwordHash`), `getSession()`, `setSession(userId)`, `clearSession()`.
+4. Crear `AuthStack` con `LoginScreen` y `RegisterScreen` (inputs + botón + mensaje de error inline, según `DESIGN.md`).
+5. Montar navegación raíz condicional: sin sesión → `AuthStack`; con sesión → `MainStack` (`TaskListScreen`/`TaskFormScreen`), leyendo la sesión guardada al abrir la app.
+6. Botón "Cerrar sesión" en el header de `TaskListScreen`: limpia sesión (`clearSession()`) y vuelve a `LoginScreen`.
+
+**Entregable**: registrar usuario, cerrar y reabrir la app mantiene la sesión; "Cerrar sesión" vuelve al login; login con credenciales incorrectas muestra error sin romper la app.
+
+---
+
+## Fase 3 — Persistencia local (AsyncStorage) con datos mock
+
+1. Crear `src/storage/taskStorage.ts` con funciones: `getTasks(userId)`, `saveTask(task)`, `deleteTask(id)` (`@react-native-async-storage/async-storage` ya instalado en Fase 2).
+2. En `TaskListScreen`, cargar las tareas del usuario en sesión (`getTasks(currentUserId)`) con `FlatList` (sin UI final todavía, solo `Text` con el título).
+3. Insertar 2-3 tareas de prueba manualmente (hardcodeadas, con `userId` del usuario registrado en Fase 2) para verificar que se guardan y leen correctamente entre reinicios de la app.
 
 **Entregable**: cerrar y reabrir la app conserva las tareas de prueba.
 
 ---
 
-## Fase 3 — CRUD básico de tareas (sin cámara/GPS todavía)
+## Fase 4 — CRUD básico de tareas (sin cámara/GPS todavía)
 
-1. Instalar `expo-crypto`. `TaskFormScreen`: inputs de título + descripción, switch "Completada", botón "Guardar".
-2. Guardar nueva tarea en `AsyncStorage` vía `taskStorage.ts` (id generado con `Crypto.randomUUID()` de `expo-crypto`), volver a `TaskListScreen`.
+1. `TaskFormScreen`: inputs de título + descripción, switch "Completada", botón "Guardar" (`expo-crypto` ya instalado en Fase 2).
+2. Guardar nueva tarea en `AsyncStorage` vía `taskStorage.ts` (id generado con `Crypto.randomUUID()`, `userId` = usuario en sesión), volver a `TaskListScreen`.
 3. Modo editar: tap en tarea de la lista abre `TaskFormScreen` con los datos cargados; "Guardar" actualiza; botón "Eliminar" (solo visible editando) borra y vuelve.
 4. Aplicar `TaskCard` básico (checkbox + título + tachado si completada) según `DESIGN.md`.
 
@@ -55,7 +67,7 @@ Basado en `BRIEF.md` y `DESIGN.md`. Cada fase entrega algo corriendo y verificab
 
 ---
 
-## Fase 4 — Cámara (expo-camera + expo-file-system + expo-image-manipulator)
+## Fase 5 — Cámara (expo-camera + expo-file-system + expo-image-manipulator)
 
 1. Instalar `expo-camera`, `expo-file-system`, `expo-image-manipulator`.
 2. Botón "Agregar foto" en `TaskFormScreen`: pide permiso *lazy*, abre cámara.
@@ -67,7 +79,7 @@ Basado en `BRIEF.md` y `DESIGN.md`. Cada fase entrega algo corriendo y verificab
 
 ---
 
-## Fase 5 — Ubicación (expo-location)
+## Fase 6 — Ubicación (expo-location)
 
 1. Instalar `expo-location`.
 2. Botón "Usar ubicación actual" en `TaskFormScreen`: pide permiso *lazy*, obtiene coordenadas, setea `location`.
@@ -79,18 +91,18 @@ Basado en `BRIEF.md` y `DESIGN.md`. Cada fase entrega algo corriendo y verificab
 
 ---
 
-## Fase 6 — Importación desde JSONPlaceholder
+## Fase 7 — Importación desde JSONPlaceholder
 
 1. Crear `src/api/jsonPlaceholder.ts` con función `fetchTodos()` (`GET https://jsonplaceholder.typicode.com/todos`).
 2. Botón "Importar de JSONPlaceholder" en el header de `TaskListScreen`.
-3. Mapear respuesta a `Task` (`source: "jsonplaceholder"`, sin foto/ubicación), guardar en `AsyncStorage`, evitar duplicados en reimportaciones (por ejemplo filtrando por id ya importado).
+3. Mapear respuesta a `Task` (`source: "jsonplaceholder"`, sin foto/ubicación, `userId` = usuario en sesión), guardar en `AsyncStorage`, evitar duplicados en reimportaciones (por ejemplo filtrando por id ya importado).
 4. Manejar error de red: mensaje corto + botón "Reintentar" (según `DESIGN.md`), sin romper la lista existente.
 
 **Entregable**: importar tareas de la API puebla la lista junto a las tareas locales, sin duplicar en múltiples imports.
 
 ---
 
-## Fase 7 — Estados de UI y pulido visual
+## Fase 8 — Estados de UI y pulido visual
 
 1. Estado vacío en `TaskListScreen` (sin tareas): ícono + texto + CTA "Crear tu primera tarea" / "Importar tareas".
 2. Estado de carga (`ActivityIndicator`) durante import inicial y guardado de foto.
@@ -101,23 +113,24 @@ Basado en `BRIEF.md` y `DESIGN.md`. Cada fase entrega algo corriendo y verificab
 
 ---
 
-## Fase 8 — Testing (Jest + jest-expo)
+## Fase 9 — Testing (Jest + jest-expo)
 
 1. Instalar y configurar `jest-expo` como preset de Jest.
 2. Mock de `expo-camera`: test que verifica que al capturar foto se llama a la función de compresión/guardado y se setea `photoUri`.
 3. Mock de `expo-location`: test que verifica que al pedir ubicación se setea `location` con coordenadas mockeadas.
 4. Test de manejo de permiso rechazado: verificar que la tarea se puede guardar igual sin `photoUri`/`location`.
-5. Correr suite completa: `pnpm test`.
+5. (Opcional, recomendado) Test de flujo de autenticación: alta de usuario válida, rechazo de usuario duplicado, rechazo de credenciales incorrectas (`authStorage.ts`, sin mocks de hardware).
+6. Correr suite completa: `pnpm test`.
 
-**Entregable**: suite de tests verde cubriendo cámara y GPS (mockeados), cumple requisito 3 del BRIEF.
+**Entregable**: suite de tests verde cubriendo cámara y GPS (mockeados), cumple requisito 4 del BRIEF.
 
 ---
 
-## Fase 9 — Revisión final contra BRIEF y DESIGN
+## Fase 10 — Revisión final contra BRIEF y DESIGN
 
 1. Checklist manual: cada punto de "Alcance del proyecto" en `BRIEF.md` cumplido.
-2. Checklist manual: cada sección de `DESIGN.md` (pantallas, paleta, componentes, permisos, estados) reflejada en la app real.
-3. Probar en dispositivo/emulador Android limpio (sin datos previos) el flujo completo: abrir app vacía → importar → crear tarea con foto+GPS → editar → completar → eliminar.
+2. Checklist manual: cada sección de `DESIGN.md` (pantallas, paleta, componentes, autenticación, permisos, estados) reflejada en la app real.
+3. Probar en dispositivo/emulador Android limpio (sin datos previos) el flujo completo: abrir app → registrarse → importar → crear tarea con foto+GPS → editar → completar → eliminar → cerrar sesión → volver a iniciar sesión.
 
 **Entregable**: app lista para entrega del examen.
 
@@ -126,5 +139,5 @@ Basado en `BRIEF.md` y `DESIGN.md`. Cada fase entrega algo corriendo y verificab
 ## Fuera de alcance (Roadmap, no implementar ahora)
 
 - Migración a Firebase Firestore.
-- Autenticación de usuarios.
+- Autenticación multi-dispositivo (Firebase Authentication).
 - Sincronización en tiempo real entre dispositivos.

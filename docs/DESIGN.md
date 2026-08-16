@@ -6,14 +6,26 @@ Dirección visual: **moderno y amigable** — violeta + coral sobre fondo cálid
 
 ## 1. Navegación y pantallas
 
-Librería: **React Navigation** (Stack Navigator). Dos pantallas, sin más.
+Librería: **React Navigation** (Stack Navigator). Un `AuthStack` (sin sesión) y un `MainStack` (con sesión), montados condicionalmente según haya `currentUserId` en `AsyncStorage`.
 
 ```
-Stack Navigator
+AuthStack (sin sesión)
+├── LoginScreen (home si no hay sesión)
+│     - Input usuario, input contraseña (secureTextEntry)
+│     - Botón "Ingresar"
+│     - Link "Crear cuenta" → RegisterScreen
+│
+└── RegisterScreen
+      - Input usuario, input contraseña, input confirmar contraseña
+      - Botón "Registrarme"
+      - Link "Ya tengo cuenta" → LoginScreen
+
+MainStack (con sesión)
 ├── TaskListScreen (home)
-│     - Lista de tareas (FlatList)
+│     - Lista de tareas del usuario en sesión (FlatList)
 │     - Botón "+" flotante (FAB) → TaskFormScreen, modo crear
 │     - Botones "Importar de JSONPlaceholder" y "Sincronizar" en el header
+│     - Ícono "Cerrar sesión" en el header
 │     - Tap en tarea → TaskFormScreen, modo editar/ver
 │
 └── TaskFormScreen (crear + editar + ver, combinada)
@@ -54,6 +66,7 @@ Stack Navigator
 - **TaskCard** (tarjeta en TaskListScreen): checkbox de completada, título, thumbnail redondeado de foto si existe, ícono de ubicación si tiene GPS, ícono de nube si está sincronizada (`syncedAt`), texto tachado + `#A8A29E` si completada.
 - **FAB**: botón flotante "+", color `#7C3AED`, esquina inferior derecha → abre TaskFormScreen en modo crear.
 - **ImportButton** / **SyncButton**: íconos en el header de TaskListScreen (descarga = importar desde JSONPlaceholder, subida = sincronizar tareas locales pendientes vía `POST`).
+- **LoginForm** / **RegisterForm** (dentro de LoginScreen/RegisterScreen): input usuario, input contraseña (`secureTextEntry`), botón primario ("Ingresar"/"Registrarme"), mensaje de error corto inline bajo el form (no `Alert`), link secundario al otro flujo (login ↔ registro).
 - **TaskForm** (dentro de TaskFormScreen):
   - Input título (obligatorio)
   - Textarea descripción (opcional)
@@ -64,7 +77,18 @@ Stack Navigator
 
 ---
 
-## 4. Flujo de permisos (cámara / GPS)
+## 4. Flujo de autenticación
+
+- `LoginScreen` es la pantalla inicial mientras no haya sesión activa (`currentUserId` vacío en `AsyncStorage`).
+- **Registro**: valida usuario único (case-insensitive) y contraseña mínima (4 caracteres); hashea la contraseña (`expo-crypto`, SHA-256) antes de guardarla; crea sesión automáticamente al registrarse con éxito y navega a `TaskListScreen`.
+- **Login**: busca el usuario en `AsyncStorage` y compara `passwordHash`; si coincide, guarda `currentUserId` y navega a `TaskListScreen`.
+- **Error** (usuario inexistente, contraseña incorrecta, usuario ya registrado): mensaje corto inline bajo el form, color `#EF4444`, sin `Alert`; nunca revela cuál de usuario/contraseña falló ("Usuario o contraseña incorrectos").
+- La sesión persiste entre reinicios de la app hasta "Cerrar sesión" explícito (ícono en el header de `TaskListScreen`), que limpia `currentUserId` y vuelve a `LoginScreen`.
+- `TaskListScreen` solo muestra tareas con `userId` igual al usuario en sesión.
+
+---
+
+## 5. Flujo de permisos (cámara / GPS)
 
 - Solicitud **lazy**: se pide el permiso recién al tocar "Agregar foto" o "Usar ubicación actual", nunca al abrir la app.
 - **Concede** → se ejecuta la acción (abre cámara / captura coordenadas) y el resultado se guarda en el campo correspondiente.
@@ -74,8 +98,9 @@ Stack Navigator
 
 ---
 
-## 5. Estados de UI
+## 6. Estados de UI
 
 - **Vacío** (sin tareas): ícono grande + "No tenés tareas todavía" + botones "Crear tu primera tarea" / "Importar tareas".
 - **Cargando**: `ActivityIndicator` color `#7C3AED` durante importación inicial, sincronización o guardado de foto; no bloquea toda la pantalla salvo en el import/sync inicial.
 - **Error** (falla de red al importar o sincronizar): mensaje corto + botón "Reintentar"; las tareas locales ya guardadas siguen visibles y usables — la app nunca se rompe por un fallo de red.
+- **Auth — error de validación** (login/registro): mensaje corto inline bajo el form (ver sección 4), el form permanece editable, sin bloquear ni navegar.
