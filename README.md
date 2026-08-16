@@ -38,7 +38,7 @@ Aplicación móvil (React Native + Expo) para registrar y visualizar tareas pend
 ### Pruebas automatizadas
 - Jest + jest-expo, con mocks de `expo-camera` y `expo-location`.
 - Cobertura de: captura de imágenes, obtención de ubicación GPS, guardado sin permisos, eliminación de tareas, storage de autenticación, integración con JSONPlaceholder.
-- Evidencia manual de permisos (cámara y GPS) en emulador Android: `docs/pruebas/`.
+- Evidencia manual de permisos (cámara y GPS) en emulador Android: documentada en `INFORME_PROYECTO.docx` (Escritorio).
 
 ## Modelo de datos
 
@@ -85,8 +85,7 @@ Examen2AppMovil/
 ├── docs/                      # Brief, diseño y plan del proyecto
 │   ├── BRIEF.md
 │   ├── DESIGN.md
-│   ├── PLAN.md
-│   └── pruebas/               # Evidencia de permisos (capturas + informe)
+│   └── PLAN.md
 └── app/                       # Código fuente Expo/React Native
     ├── App.tsx                # Entry point, providers y stack raíz
     ├── index.ts
@@ -156,6 +155,5 @@ Evidencia visual generada en emulador Android (Pixel 7, API 34). Imágenes compl
 - `docs/BRIEF.md` — alcance, stack y modelo de datos completo.
 - `docs/DESIGN.md` — UI/UX, paleta, componentes, flujos de auth y permisos.
 - `docs/PLAN.md` — plan de implementación.
-- `docs/pruebas/INFORME_PERMISOS.md` — evidencia de pruebas de permisos de cámara y ubicación.
-- `INFORME_PROYECTO.docx` (Escritorio, fuera del repo) — informe completo del proyecto.
+- `INFORME_PROYECTO.docx` (Escritorio, fuera del repo) — informe completo del proyecto, incluye evidencia de permisos cámara/ubicación.
 </content>
