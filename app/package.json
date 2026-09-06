@@ -14,13 +14,16 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/native": "^7.3.16",
     "@react-navigation/native-stack": "^7.18.8",
-    "expo": "~54.0.35",
+    "crypto-js": "^4.2.0",
+    "expo": "~54.0.37",
     "expo-camera": "~17.0.10",
     "expo-crypto": "~15.0.9",
-    "expo-file-system": "~19.0.23",
+    "expo-file-system": "~19.0.24",
     "expo-image-manipulator": "~14.0.8",
     "expo-location": "~19.0.8",
+    "expo-secure-store": "^15.0.8",
     "expo-status-bar": "~3.0.9",
+    "firebase": "^12.18.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
@@ -30,17 +33,24 @@
   },
   "devDependencies": {
     "@testing-library/react-native": "^14.0.1",
+    "@types/crypto-js": "^4.2.2",
     "@types/jest": "29.5.14",
     "@types/react": "~19.1.0",
     "jest": "~29.7.0",
-    "jest-expo": "~54.0.17",
+    "jest-expo": "~54.0.18",
     "typescript": "~5.9.2"
   },
   "private": true,
   "jest": {
     "preset": "jest-expo",
     "transformIgnorePatterns": [
-      "node_modules/(?!(.pnpm|(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg))"
-    ]
+      "node_modules/(?!(.pnpm|(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|firebase|@firebase/.*))"
+    ],
+    "testEnvironmentOptions": {
+      "customExportConditions": [
+        "node",
+        "require"
+      ]
+    }
   }
 }

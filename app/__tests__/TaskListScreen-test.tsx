@@ -25,14 +25,28 @@ jest.mock("../src/api/jsonPlaceholder", () => ({
   syncTask: jest.fn(),
 }));
 
+const mockSecureStoreData = new Map<string, string>();
+
+jest.mock("expo-secure-store", () => ({
+  getItemAsync: jest.fn((key: string) => Promise.resolve(mockSecureStoreData.get(key) ?? null)),
+  setItemAsync: jest.fn((key: string, value: string) => {
+    mockSecureStoreData.set(key, value);
+    return Promise.resolve();
+  }),
+}));
+
+jest.mock("expo-crypto", () => ({
+  getRandomBytesAsync: (size: number) =>
+    Promise.resolve(Uint8Array.from({ length: size }, (_, i) => i % 256)),
+}));
+
 const mockLogout = jest.fn();
 
 jest.mock("../src/auth/AuthContext", () => ({
   useAuth: () => ({
     user: {
-      id: "test-user",
-      username: "tester",
-      passwordHash: "hash",
+      uid: "test-user",
+      email: "tester@example.com",
       createdAt: "2024-01-01T00:00:00.000Z",
     },
     isLoading: false,
@@ -84,6 +98,7 @@ describe("<TaskListScreen />", () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     await AsyncStorage.clear();
+    mockSecureStoreData.clear();
   });
 
   test("shows the empty state and navigates to TaskForm from the call-to-action", async () => {

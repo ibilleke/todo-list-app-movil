@@ -6,17 +6,17 @@ Dirección visual: **moderno y amigable** — violeta + coral sobre fondo cálid
 
 ## 1. Navegación y pantallas
 
-Librería: **React Navigation** (Stack Navigator). Un `AuthStack` (sin sesión) y un `MainStack` (con sesión), montados condicionalmente según haya `currentUserId` en `AsyncStorage`.
+Librería: **React Navigation** (Stack Navigator). Un `AuthStack` (sin sesión) y un `MainStack` (con sesión), montados condicionalmente según haya un usuario de **Firebase Authentication** activo (`onAuthStateChanged`).
 
 ```
 AuthStack (sin sesión)
 ├── LoginScreen (home si no hay sesión)
-│     - Input usuario, input contraseña (secureTextEntry)
+│     - Input correo electrónico, input contraseña (secureTextEntry)
 │     - Botón "Ingresar"
 │     - Link "Crear cuenta" → RegisterScreen
 │
 └── RegisterScreen
-      - Input usuario, input contraseña, input confirmar contraseña
+      - Input correo electrónico, input contraseña, input confirmar contraseña
       - Botón "Registrarme"
       - Link "Ya tengo cuenta" → LoginScreen
 
@@ -79,12 +79,12 @@ MainStack (con sesión)
 
 ## 4. Flujo de autenticación
 
-- `LoginScreen` es la pantalla inicial mientras no haya sesión activa (`currentUserId` vacío en `AsyncStorage`).
-- **Registro**: valida usuario único (case-insensitive) y contraseña mínima (4 caracteres); hashea la contraseña (`expo-crypto`, SHA-256) antes de guardarla; crea sesión automáticamente al registrarse con éxito y navega a `TaskListScreen`.
-- **Login**: busca el usuario en `AsyncStorage` y compara `passwordHash`; si coincide, guarda `currentUserId` y navega a `TaskListScreen`.
-- **Error** (usuario inexistente, contraseña incorrecta, usuario ya registrado): mensaje corto inline bajo el form, color `#EF4444`, sin `Alert`; nunca revela cuál de usuario/contraseña falló ("Usuario o contraseña incorrectos").
-- La sesión persiste entre reinicios de la app hasta "Cerrar sesión" explícito (ícono en el header de `TaskListScreen`), que limpia `currentUserId` y vuelve a `LoginScreen`.
-- `TaskListScreen` solo muestra tareas con `userId` igual al usuario en sesión.
+- `LoginScreen` es la pantalla inicial mientras no haya sesión activa; `onAuthStateChanged` (Firebase) restaura la sesión al abrir la app.
+- **Registro**: valida que ambas contraseñas coincidan en el cliente; **Firebase Authentication** valida formato de correo, contraseña mínima (6 caracteres) y correo ya registrado. Al crear la cuenta con éxito, Firebase inicia sesión automáticamente y la app navega a `TaskListScreen`.
+- **Login**: `signInWithEmailAndPassword` (Firebase) valida correo/contraseña contra el proyecto de Firebase; si coincide, navega a `TaskListScreen`.
+- **Error** (correo inválido, contraseña débil, correo ya registrado, credenciales incorrectas): Firebase devuelve un código (`auth/...`) que la app traduce a un mensaje corto inline bajo el form, color `#EF4444`, sin `Alert`; el error de login nunca revela cuál de correo/contraseña falló ("Correo o contraseña incorrectos").
+- La sesión persiste entre reinicios de la app (persistencia de Firebase sobre `AsyncStorage`) hasta "Cerrar sesión" explícito (ícono en el header de `TaskListScreen`), que llama a `signOut` y vuelve a `LoginScreen`.
+- `TaskListScreen` solo muestra tareas con `userId` igual al `uid` de Firebase del usuario en sesión.
 
 ---
 
@@ -104,3 +104,14 @@ MainStack (con sesión)
 - **Cargando**: `ActivityIndicator` color `#7C3AED` durante importación inicial, sincronización o guardado de foto; no bloquea toda la pantalla salvo en el import/sync inicial.
 - **Error** (falla de red al importar o sincronizar): mensaje corto + botón "Reintentar"; las tareas locales ya guardadas siguen visibles y usables — la app nunca se rompe por un fallo de red.
 - **Auth — error de validación** (login/registro): mensaje corto inline bajo el form (ver sección 4), el form permanece editable, sin bloquear ni navegar.
+
+---
+
+## 7. Cifrado de datos sensibles
+
+Cifrado **transparente**: no hay pantalla, switch ni configuración visible para el usuario — no hay nada que diseñar en la UI para esta feature, solo comportamiento a respetar en los estados existentes.
+
+- Las tareas (`Task[]`, incluye título/descripción/ubicación) se cifran con **AES-256** (`crypto-js`) antes de guardarse en `AsyncStorage`; se descifran al leer. `TaskListScreen` y `TaskFormScreen` no cambian: siguen usando `getTasks`/`saveTask`/`deleteTask` tal cual, sin saber que hay cifrado debajo.
+- La clave vive en `expo-secure-store` (Keychain/Keystore del dispositivo), nunca en `AsyncStorage` ni visible en la UI.
+- **Fotos sin cifrar** (decisión documentada en `BRIEF.md`): el thumbnail de `TaskCard` sigue siendo una lectura directa del archivo JPEG (`Image source={{ uri: photoUri }}`), sin descifrado en cada render — evita el costo de cifrado síncrono en JS puro sobre binarios en una lista con scroll (`FlatList`).
+- **Si la clave de cifrado se pierde** (dispositivo nuevo, storage seguro borrado): la app genera una clave nueva y las tareas cifradas previamente dejan de leerse. Esto se ve igual que el **estado Vacío** de la sección 6 ("No tenés tareas todavía") — no hay un mensaje de error distinto ni un `Alert`; es indistinguible de un usuario sin tareas todavía, comportamiento aceptado dado que no hay backend propio que resguarde la clave.

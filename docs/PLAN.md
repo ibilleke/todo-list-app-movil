@@ -136,8 +136,31 @@ Basado en `BRIEF.md` y `DESIGN.md`. Cada fase entrega algo corriendo y verificab
 
 ---
 
+## Fase 11 — Migración de autenticación local a Firebase Authentication
+
+La Fase 2 implementó login/registro **local** (usuario + hash SHA-256 en `AsyncStorage`, ver historial arriba). Esta fase reemplaza esa autenticación local por **Firebase Authentication** (proveedor correo/contraseña), manteniendo el resto de la app (`TaskListScreen`, `TaskFormScreen`, `taskStorage.ts`) sin cambios funcionales.
+
+**¿Por qué Firebase Authentication y no Auth0?**
+- El SDK JS de Firebase (`firebase`) es JavaScript puro y corre en **Expo Go** (managed workflow) sin *development build* ni módulos nativos. El SDK de Auth0 para React Native (`react-native-auth0`) requiere linking nativo, incompatible con el flujo de trabajo del proyecto (Fase 0).
+- El Roadmap ya apuntaba a **Firebase Firestore** como backend remoto futuro; usar Firebase Authentication comparte proyecto/consola y permite que las reglas de seguridad de Firestore usen `request.auth.uid` sin intercambiar tokens entre dos proveedores.
+- Auth0 apunta a SSO/enterprise (SAML, federación), fuera del alcance de un login simple de correo/contraseña para una sola app.
+
+1. Instalar `firebase` (SDK JS modular, no `@react-native-firebase/*` — ese paquete requiere módulos nativos e incompatible con Expo Go).
+2. Crear `src/firebase/firebaseConfig.ts`: inicializa la app de Firebase y `Auth` con persistencia en `AsyncStorage` (`initializeAuth` + `getReactNativePersistence`), leyendo credenciales de variables de entorno `EXPO_PUBLIC_FIREBASE_*` (`app/.env`, no versionado). `app/.env.example` documenta los pasos para que cada integrante cree su propio proyecto de Firebase y habilite el proveedor "Correo electrónico/contraseña".
+3. Reescribir `src/storage/authStorage.ts`: `registerUser(email, password)` → `createUserWithEmailAndPassword`, `loginUser(email, password)` → `signInWithEmailAndPassword`, `logoutUser()` → `signOut`, `subscribeToAuthState(callback)` → `onAuthStateChanged` (reemplaza `getUsers`/`getSession`/`setSession`/`clearSession`). Los códigos de error de Firebase (`auth/email-already-in-use`, `auth/weak-password`, `auth/invalid-credential`, etc.) se traducen a mensajes en español.
+4. Reescribir `src/auth/AuthContext.tsx`: se suscribe a `subscribeToAuthState` en el mount (reemplaza la lectura manual de `getSession`/`getUsers`); `register`/`login` ahora reciben `(email, password)`.
+5. Actualizar `src/types/User.ts`: `{ uid, email, createdAt }` en vez de `{ id, username, passwordHash, createdAt }`. `Task.userId` ahora almacena el `uid` de Firebase; se actualizan `TaskListScreen.tsx` y `TaskFormScreen.tsx` (`user!.id` → `user!.uid`).
+6. Actualizar `LoginScreen`/`RegisterScreen`: input de usuario → input de correo (`keyboardType="email-address"`), contraseña mínima 6 caracteres (requisito de Firebase).
+7. Reescribir los tests de autenticación mockeando `firebase/auth` (`authStorage-test.ts`) y `authStorage.ts` (`AuthContext-test.tsx`) en vez de `AsyncStorage`; actualizar `LoginScreen-test.tsx`/`RegisterScreen-test.tsx` a los nuevos inputs de correo.
+8. Ajustar configuración de Jest: `transformIgnorePatterns` debe incluir `firebase`/`@firebase` (si no, Jest no transpila los paquetes ESM del SDK) y `testEnvironmentOptions.customExportConditions: ["node", "require"]` (evita que Jest resuelva el build ESM de `@firebase/util` pensado para bundlers). Ver `app/package.json`.
+9. Correr suite completa: `pnpm test`.
+
+**Entregable**: registro y login con correo/contraseña reales contra un proyecto de Firebase; la sesión persiste entre reinicios (`onAuthStateChanged`); "Cerrar sesión" limpia la sesión de Firebase; suite de tests verde.
+
+---
+
 ## Fuera de alcance (Roadmap, no implementar ahora)
 
-- Migración a Firebase Firestore.
-- Autenticación multi-dispositivo (Firebase Authentication).
-- Sincronización en tiempo real entre dispositivos.
+- Migración de tareas a Firebase Firestore (backend remoto real, reemplaza JSONPlaceholder).
+- Sincronización en tiempo real entre dispositivos, una vez migrado a Firestore.
+- Proveedores adicionales de Firebase Authentication (Google, Apple) más allá de correo/contraseña.

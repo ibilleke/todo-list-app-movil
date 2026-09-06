@@ -48,28 +48,28 @@ describe("<LoginScreen />", () => {
     jest.clearAllMocks();
   });
 
-  test("logs in with the entered username and password", async () => {
+  test("logs in with the entered email and password", async () => {
     mockLogin.mockResolvedValue(undefined);
     const props = buildProps();
     const { getByText, getByPlaceholderText } = await renderScreen(props);
 
-    await fireEvent.changeText(getByPlaceholderText("Usuario"), "Ignacio");
+    await fireEvent.changeText(getByPlaceholderText("correo@ejemplo.com"), "ignacio@example.com");
     await fireEvent.changeText(getByPlaceholderText("Contraseña"), "1234");
     await fireEvent.press(getByText("Ingresar"));
 
-    await waitFor(() => expect(mockLogin).toHaveBeenCalledWith("Ignacio", "1234"));
+    await waitFor(() => expect(mockLogin).toHaveBeenCalledWith("ignacio@example.com", "1234"));
   });
 
   test("shows the storage error message when login rejects", async () => {
-    mockLogin.mockRejectedValue(new Error("Usuario o contraseña incorrectos"));
+    mockLogin.mockRejectedValue(new Error("Correo o contraseña incorrectos"));
     const props = buildProps();
     const { getByText, getByPlaceholderText } = await renderScreen(props);
 
-    await fireEvent.changeText(getByPlaceholderText("Usuario"), "Ignacio");
+    await fireEvent.changeText(getByPlaceholderText("correo@ejemplo.com"), "ignacio@example.com");
     await fireEvent.changeText(getByPlaceholderText("Contraseña"), "wrong");
     await fireEvent.press(getByText("Ingresar"));
 
-    await waitFor(() => expect(getByText("Usuario o contraseña incorrectos")).toBeTruthy());
+    await waitFor(() => expect(getByText("Correo o contraseña incorrectos")).toBeTruthy());
   });
 
   test("navigates to Register when the register link is pressed", async () => {

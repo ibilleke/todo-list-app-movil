@@ -1,6 +1,5 @@
 export type User = {
-  id: string; // uuid generado localmente
-  username: string; // único, case-insensitive
-  passwordHash: string; // SHA-256 (expo-crypto digestStringAsync) — nunca texto plano
-  createdAt: string; // ISO date
+  uid: string; // uid de Firebase Authentication (dueño de las tareas, Task.userId)
+  email: string; // correo con el que se registró/inició sesión
+  createdAt: string; // ISO date, provista por Firebase (metadata.creationTime)
 };

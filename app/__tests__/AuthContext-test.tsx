@@ -5,21 +5,18 @@ import * as authStorage from "../src/storage/authStorage";
 import type { User } from "../src/types/User";
 
 jest.mock("../src/storage/authStorage", () => ({
-  getUsers: jest.fn(),
   registerUser: jest.fn(),
   loginUser: jest.fn(),
-  getSession: jest.fn(),
-  setSession: jest.fn(),
-  clearSession: jest.fn(),
+  logoutUser: jest.fn(),
+  subscribeToAuthState: jest.fn(),
 }));
 
 const mockedAuthStorage = authStorage as jest.Mocked<typeof authStorage>;
 
 function buildUser(overrides: Partial<User> = {}): User {
   return {
-    id: "user-1",
-    username: "Ignacio",
-    passwordHash: "hash",
+    uid: "user-1",
+    email: "ignacio@example.com",
     createdAt: "2024-01-01T00:00:00.000Z",
     ...overrides,
   };
@@ -30,10 +27,14 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe("AuthContext", () => {
+  const unsubscribe = jest.fn();
+
   beforeEach(() => {
     jest.resetAllMocks();
-    mockedAuthStorage.getSession.mockResolvedValue(null);
-    mockedAuthStorage.getUsers.mockResolvedValue([]);
+    mockedAuthStorage.subscribeToAuthState.mockImplementation((callback) => {
+      callback(null);
+      return unsubscribe;
+    });
   });
 
   test("useAuth throws when used outside an AuthProvider", async () => {
@@ -51,39 +52,45 @@ describe("AuthContext", () => {
     );
   });
 
-  test("resolves with no user when there is no stored session", async () => {
+  test("resolves with no user when Firebase reports no session", async () => {
     const { result } = await renderHook(() => useAuth(), { wrapper });
 
     expect(result.current.isLoading).toBe(false);
     expect(result.current.user).toBeNull();
   });
 
-  test("restores the session user on mount when a session exists", async () => {
+  test("restores the session user Firebase reports on mount", async () => {
     const stored = buildUser();
-    mockedAuthStorage.getSession.mockResolvedValue(stored.id);
-    mockedAuthStorage.getUsers.mockResolvedValue([stored]);
+    mockedAuthStorage.subscribeToAuthState.mockImplementation((callback) => {
+      callback(stored);
+      return unsubscribe;
+    });
 
     const { result } = await renderHook(() => useAuth(), { wrapper });
-
-    await act(async () => {});
 
     expect(result.current.isLoading).toBe(false);
     expect(result.current.user).toEqual(stored);
   });
 
-  test("register persists the session and exposes the created user", async () => {
-    const created = buildUser({ id: "new-user", username: "Nuevo" });
+  test("unsubscribes from Firebase auth state changes on unmount", async () => {
+    const { unmount } = await renderHook(() => useAuth(), { wrapper });
+
+    await unmount();
+
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  test("register exposes the created user", async () => {
+    const created = buildUser({ uid: "new-user", email: "nuevo@example.com" });
     mockedAuthStorage.registerUser.mockResolvedValue(created);
 
     const { result } = await renderHook(() => useAuth(), { wrapper });
-    await act(async () => {});
 
     await act(async () => {
-      await result.current.register("Nuevo", "1234");
+      await result.current.register("nuevo@example.com", "123456");
     });
 
-    expect(mockedAuthStorage.registerUser).toHaveBeenCalledWith("Nuevo", "1234");
-    expect(mockedAuthStorage.setSession).toHaveBeenCalledWith("new-user");
+    expect(mockedAuthStorage.registerUser).toHaveBeenCalledWith("nuevo@example.com", "123456");
     expect(result.current.user).toEqual(created);
   });
 
@@ -92,40 +99,35 @@ describe("AuthContext", () => {
     mockedAuthStorage.loginUser.mockResolvedValue(found);
 
     const { result } = await renderHook(() => useAuth(), { wrapper });
-    await act(async () => {});
 
     await act(async () => {
-      await result.current.login("Ignacio", "1234");
+      await result.current.login("ignacio@example.com", "123456");
     });
 
-    expect(mockedAuthStorage.setSession).toHaveBeenCalledWith(found.id);
     expect(result.current.user).toEqual(found);
   });
 
   test("login rejects with the storage error and leaves the user unauthenticated", async () => {
-    mockedAuthStorage.loginUser.mockRejectedValue(new Error("Usuario o contraseña incorrectos"));
+    mockedAuthStorage.loginUser.mockRejectedValue(new Error("Correo o contraseña incorrectos"));
 
     const { result } = await renderHook(() => useAuth(), { wrapper });
-    await act(async () => {});
 
     await expect(
       act(async () => {
-        await result.current.login("Ignacio", "wrong");
+        await result.current.login("ignacio@example.com", "wrong");
       })
-    ).rejects.toThrow("Usuario o contraseña incorrectos");
+    ).rejects.toThrow("Correo o contraseña incorrectos");
 
     expect(result.current.user).toBeNull();
-    expect(mockedAuthStorage.setSession).not.toHaveBeenCalled();
   });
 
-  test("logout clears the session and the current user", async () => {
+  test("logout clears the current user", async () => {
     const found = buildUser();
     mockedAuthStorage.loginUser.mockResolvedValue(found);
 
     const { result } = await renderHook(() => useAuth(), { wrapper });
-    await act(async () => {});
     await act(async () => {
-      await result.current.login("Ignacio", "1234");
+      await result.current.login("ignacio@example.com", "123456");
     });
     expect(result.current.user).toEqual(found);
 
@@ -133,7 +135,7 @@ describe("AuthContext", () => {
       await result.current.logout();
     });
 
-    expect(mockedAuthStorage.clearSession).toHaveBeenCalledTimes(1);
+    expect(mockedAuthStorage.logoutUser).toHaveBeenCalledTimes(1);
     expect(result.current.user).toBeNull();
   });
 });

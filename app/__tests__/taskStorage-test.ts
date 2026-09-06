@@ -6,6 +6,26 @@ jest.mock("@react-native-async-storage/async-storage", () =>
   require("@react-native-async-storage/async-storage/jest/async-storage-mock")
 );
 
+const mockSecureStoreData = new Map<string, string>();
+
+jest.mock("expo-secure-store", () => ({
+  getItemAsync: jest.fn((key: string) => Promise.resolve(mockSecureStoreData.get(key) ?? null)),
+  setItemAsync: jest.fn((key: string, value: string) => {
+    mockSecureStoreData.set(key, value);
+    return Promise.resolve();
+  }),
+}));
+
+jest.mock("expo-crypto", () => {
+  let callCount = 0;
+  return {
+    getRandomBytesAsync: jest.fn((size: number) => {
+      callCount += 1;
+      return Promise.resolve(Uint8Array.from({ length: size }, (_, i) => (i + callCount) % 256));
+    }),
+  };
+});
+
 function buildTask(overrides: Partial<Task> = {}): Task {
   return {
     id: "task-1",
@@ -21,6 +41,7 @@ function buildTask(overrides: Partial<Task> = {}): Task {
 describe("taskStorage", () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
+    mockSecureStoreData.clear();
   });
 
   test("getTasks returns an empty list when nothing is stored", async () => {
@@ -67,6 +88,25 @@ describe("taskStorage", () => {
 
   test("getTasks recovers from corrupted storage instead of throwing", async () => {
     await AsyncStorage.setItem("@todolist/tasks", "{not-json");
+
+    await expect(getTasks("user-1")).resolves.toEqual([]);
+  });
+
+  test("persists tasks encrypted: the raw AsyncStorage value is not readable plaintext JSON", async () => {
+    await saveTask(buildTask({ title: "Comprar café bien secreto" }));
+
+    const raw = await AsyncStorage.getItem("@todolist/tasks");
+
+    expect(raw).not.toBeNull();
+    expect(raw).not.toContain("Comprar café bien secreto");
+    expect(() => JSON.parse(raw as string)).toThrow();
+  });
+
+  test("getTasks returns an empty list when the stored ciphertext was encrypted with a since-rotated key", async () => {
+    await saveTask(buildTask());
+    // Simula un dispositivo nuevo / keystore borrado: la clave de expo-secure-store
+    // desaparece pero el AsyncStorage cifrado sigue en disco.
+    mockSecureStoreData.clear();
 
     await expect(getTasks("user-1")).resolves.toEqual([]);
   });

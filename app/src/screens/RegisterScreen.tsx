@@ -21,7 +21,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Register">;
 
 export default function RegisterScreen({ navigation }: Props) {
   const { register } = useAuth();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +35,7 @@ export default function RegisterScreen({ navigation }: Props) {
     }
     setIsSubmitting(true);
     try {
-      await register(username, password);
+      await register(email, password);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo crear la cuenta");
     } finally {
@@ -58,17 +58,18 @@ export default function RegisterScreen({ navigation }: Props) {
             <Text style={authStyles.heading}>Creá tu cuenta</Text>
             <Text style={authStyles.subheading}>Guardá tus tareas en este dispositivo.</Text>
 
-            <Text style={authStyles.label}>Usuario</Text>
+            <Text style={authStyles.label}>Correo electrónico</Text>
             <View style={authStyles.inputRow}>
-              <Ionicons name="person-outline" size={18} color={colors.textSecondary} />
+              <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
               <TextInput
                 style={authStyles.input}
-                value={username}
-                onChangeText={setUsername}
-                placeholder="Usuario"
+                value={email}
+                onChangeText={setEmail}
+                placeholder="correo@ejemplo.com"
                 placeholderTextColor={colors.textSecondary}
                 autoCapitalize="none"
                 autoCorrect={false}
+                keyboardType="email-address"
               />
             </View>
 
@@ -79,7 +80,7 @@ export default function RegisterScreen({ navigation }: Props) {
                 style={authStyles.input}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Mínimo 4 caracteres"
+                placeholder="Mínimo 6 caracteres"
                 placeholderTextColor={colors.textSecondary}
                 secureTextEntry
               />

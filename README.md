@@ -1,6 +1,6 @@
 # To Do List — App Móvil
 
-Aplicación móvil (React Native + Expo) para registrar y visualizar tareas pendientes, con foto y ubicación GPS opcionales por tarea, login local y sincronización con una API externa.
+Aplicación móvil (React Native + Expo) para registrar y visualizar tareas pendientes, con foto y ubicación GPS opcionales por tarea, login con Firebase Authentication y sincronización con una API externa.
 
 ## Stack
 
@@ -11,7 +11,7 @@ Aplicación móvil (React Native + Expo) para registrar y visualizar tareas pend
 | Plataforma objetivo | Android |
 | Código | `app/` |
 | Android package | `com.ignac.todolist` |
-| Backend | Ninguno — Node.js solo como tooling (Expo CLI, pnpm) |
+| Backend | Ninguno propio — **Firebase Authentication** (BaaS) para usuarios/sesión; Node.js solo como tooling (Expo CLI, pnpm) |
 | Persistencia | Local: `AsyncStorage` + `expo-file-system` |
 | API externa | JSONPlaceholder (import + sync de tareas vía POST) |
 | Gestor de paquetes | pnpm (obligatorio) |
@@ -19,10 +19,11 @@ Aplicación móvil (React Native + Expo) para registrar y visualizar tareas pend
 
 ## Funcionalidades
 
-### Autenticación local
-- Registro y login sin backend propio. Usuario único (case-insensitive) + contraseña hasheada con SHA-256 (`expo-crypto`).
-- Sesión (`currentUserId`) persiste en `AsyncStorage` entre reinicios hasta cerrar sesión.
-- Soporta múltiples cuentas en el mismo dispositivo; cada tarea pertenece a su usuario (`Task.userId`).
+### Autenticación (Firebase Authentication)
+- Registro y login con correo + contraseña vía **Firebase Authentication** — sin contraseñas ni tabla de usuarios en el dispositivo.
+- La sesión persiste entre reinicios (`onAuthStateChanged` + persistencia de Firebase sobre `AsyncStorage`) hasta cerrar sesión explícitamente.
+- Cada tarea pertenece a su usuario (`Task.userId` = `uid` de Firebase).
+- Setup del proyecto de Firebase: ver sección "Configuración de Firebase" más abajo.
 
 ### Tareas
 - CRUD de tareas: título (obligatorio), descripción, foto, ubicación, estado completada.
@@ -36,18 +37,17 @@ Aplicación móvil (React Native + Expo) para registrar y visualizar tareas pend
 - JSONPlaceholder no persiste escrituras server-side, por lo que la fuente de verdad real es siempre el almacenamiento local (`AsyncStorage`).
 
 ### Pruebas automatizadas
-- Jest + jest-expo, con mocks de `expo-camera` y `expo-location`.
-- Cobertura de: captura de imágenes, obtención de ubicación GPS, guardado sin permisos, eliminación de tareas, storage de autenticación, integración con JSONPlaceholder.
+- Jest + jest-expo, con mocks de `expo-camera`, `expo-location` y `firebase/auth`.
+- Cobertura de: captura de imágenes, obtención de ubicación GPS, guardado sin permisos, eliminación de tareas, storage/tareas, flujo de autenticación (Firebase Auth mockeado), integración con JSONPlaceholder.
 - Evidencia manual de permisos (cámara y GPS) en emulador Android: documentada en `INFORME_PROYECTO.docx` (Escritorio).
 
 ## Modelo de datos
 
 ```ts
 type User = {
-  id: string;
-  username: string;
-  passwordHash: string;    // SHA-256, nunca texto plano
-  createdAt: string;
+  uid: string;              // uid de Firebase Authentication
+  email: string;
+  createdAt: string;        // ISO date (metadata.creationTime de Firebase)
 };
 
 type Task = {
@@ -89,13 +89,15 @@ Examen2AppMovil/
 └── app/                       # Código fuente Expo/React Native
     ├── App.tsx                # Entry point, providers y stack raíz
     ├── index.ts
+    ├── .env.example           # Plantilla de credenciales de Firebase (copiar a .env)
     ├── src/
     │   ├── api/                 # Cliente JSONPlaceholder
-    │   ├── auth/                # AuthContext (sesión)
+    │   ├── auth/                # AuthContext (sesión de Firebase)
     │   ├── components/          # AuthHero, ScreenHeader, TaskCard
+    │   ├── firebase/             # firebaseConfig.ts (init + persistencia)
     │   ├── navigation/           # Tipos de navegación
     │   ├── screens/              # Login, Register, TaskList, TaskForm
-    │   ├── storage/              # authStorage, taskStorage (AsyncStorage)
+    │   ├── storage/              # authStorage (Firebase Auth), taskStorage (AsyncStorage)
     │   ├── theme/                # Colores y estilos
     │   └── types/                # Task, User
     └── __tests__/               # Tests Jest
@@ -106,6 +108,17 @@ Examen2AppMovil/
 - Node.js
 - pnpm (`npm i -g pnpm`)
 - Expo Go instalada en un dispositivo Android (o emulador Android)
+- Una cuenta de Google para crear un proyecto de Firebase (gratis, ver sección siguiente)
+
+## Configuración de Firebase
+
+La app usa **Firebase Authentication** (correo + contraseña) vía el SDK JS de Firebase (`firebase`), compatible con Expo Go — no hace falta un *development build* ni `@react-native-firebase/*`. Cada integrante del equipo usa su propio proyecto de Firebase; las credenciales nunca se suben al repo.
+
+1. Entrá a la [consola de Firebase](https://console.firebase.google.com/) y creá un proyecto (o reutilizá uno existente).
+2. En **Authentication → Sign-in method**, habilitá el proveedor **Correo electrónico/contraseña**.
+3. En **Configuración del proyecto → Tus apps**, agregá una app **Web** (ícono `</>`) — no hace falta registrar Android/iOS nativo, el SDK JS alcanza.
+4. Copiá los valores del objeto `firebaseConfig` que te muestra la consola.
+5. Copiá `app/.env.example` a `app/.env` y pegá ahí tus valores (`EXPO_PUBLIC_FIREBASE_API_KEY`, `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`, etc.). `app/.env` está en `.gitignore`: nunca se versiona.
 
 ## Instalación y ejecución
 
@@ -129,13 +142,13 @@ Dirección visual moderna y amigable: violeta (`#7C3AED`) + coral (`#FF6B6B`) so
 
 ## Roadmap
 
-- Migración a **Firebase Firestore** como backend remoto real (reemplaza JSONPlaceholder, persiste escrituras).
-- Migración de auth local a **Firebase Authentication** con sincronización multi-dispositivo.
-- Sincronización en tiempo real entre dispositivos.
+- Migración de tareas a **Firebase Firestore** como backend remoto real (reemplaza JSONPlaceholder, persiste escrituras) y habilita sincronización multi-dispositivo real.
+- Sincronización en tiempo real entre dispositivos, una vez migrado a Firestore.
+- Proveedores adicionales de Firebase Authentication (Google, Apple) además de correo/contraseña.
 
 ## Capturas de pantalla
 
-Evidencia visual generada en emulador Android (Pixel 7, API 34). Imágenes completas en `C:/tmp/imagenes proyecto/`.
+Evidencia visual generada en emulador Android (Pixel 7, API 34). Imágenes completas en `C:/tmp/imagenes proyecto/`. **Nota**: las capturas de Login/Registro son previas a la migración a Firebase Authentication — el campo "Usuario" de esas imágenes hoy es "Correo electrónico".
 
 | Pantalla | Captura |
 |---|---|

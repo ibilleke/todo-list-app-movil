@@ -6,8 +6,8 @@ import type { User } from "../types/User";
 type AuthContextValue = {
   user: User | null;
   isLoading: boolean;
-  register: (username: string, password: string) => Promise<void>;
-  login: (username: string, password: string) => Promise<void>;
+  register: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -18,30 +18,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
-      const userId = await authStorage.getSession();
-      if (userId) {
-        const users = await authStorage.getUsers();
-        setUser(users.find((u) => u.id === userId) ?? null);
-      }
+    // onAuthStateChanged persiste la sesión entre reinicios (AsyncStorage vía firebaseConfig)
+    // y también dispara al montar con el usuario ya logueado, si lo hay.
+    const unsubscribe = authStorage.subscribeToAuthState((current) => {
+      setUser(current);
       setIsLoading(false);
-    })();
+    });
+    return unsubscribe;
   }, []);
 
-  const register = async (username: string, password: string) => {
-    const created = await authStorage.registerUser(username, password);
-    await authStorage.setSession(created.id);
+  const register = async (email: string, password: string) => {
+    const created = await authStorage.registerUser(email, password);
     setUser(created);
   };
 
-  const login = async (username: string, password: string) => {
-    const found = await authStorage.loginUser(username, password);
-    await authStorage.setSession(found.id);
+  const login = async (email: string, password: string) => {
+    const found = await authStorage.loginUser(email, password);
     setUser(found);
   };
 
   const logout = async () => {
-    await authStorage.clearSession();
+    await authStorage.logoutUser();
     setUser(null);
   };
 

@@ -16,7 +16,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "TaskList">;
 
 export default function TaskListScreen({ navigation }: Props) {
   const { user, logout } = useAuth();
-  const userId = user!.id; // TaskListScreen solo se monta dentro de MainNavigator (ver App.tsx), user siempre existe
+  const userId = user!.uid; // TaskListScreen solo se monta dentro de MainNavigator (ver App.tsx), user siempre existe
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);

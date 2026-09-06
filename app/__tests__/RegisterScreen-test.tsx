@@ -52,39 +52,39 @@ describe("<RegisterScreen />", () => {
     const props = buildProps();
     const { getByText, getByPlaceholderText } = await renderScreen(props);
 
-    await fireEvent.changeText(getByPlaceholderText("Usuario"), "Ignacio");
-    await fireEvent.changeText(getByPlaceholderText("Mínimo 4 caracteres"), "1234");
-    await fireEvent.changeText(getByPlaceholderText("Repetí la contraseña"), "5678");
+    await fireEvent.changeText(getByPlaceholderText("correo@ejemplo.com"), "ignacio@example.com");
+    await fireEvent.changeText(getByPlaceholderText("Mínimo 6 caracteres"), "123456");
+    await fireEvent.changeText(getByPlaceholderText("Repetí la contraseña"), "654321");
     await fireEvent.press(getByText("Registrarme"));
 
     await waitFor(() => expect(getByText("Las contraseñas no coinciden")).toBeTruthy());
     expect(mockRegister).not.toHaveBeenCalled();
   });
 
-  test("registers with the entered username and password when they match", async () => {
+  test("registers with the entered email and password when they match", async () => {
     mockRegister.mockResolvedValue(undefined);
     const props = buildProps();
     const { getByText, getByPlaceholderText } = await renderScreen(props);
 
-    await fireEvent.changeText(getByPlaceholderText("Usuario"), "Ignacio");
-    await fireEvent.changeText(getByPlaceholderText("Mínimo 4 caracteres"), "1234");
-    await fireEvent.changeText(getByPlaceholderText("Repetí la contraseña"), "1234");
+    await fireEvent.changeText(getByPlaceholderText("correo@ejemplo.com"), "ignacio@example.com");
+    await fireEvent.changeText(getByPlaceholderText("Mínimo 6 caracteres"), "123456");
+    await fireEvent.changeText(getByPlaceholderText("Repetí la contraseña"), "123456");
     await fireEvent.press(getByText("Registrarme"));
 
-    await waitFor(() => expect(mockRegister).toHaveBeenCalledWith("Ignacio", "1234"));
+    await waitFor(() => expect(mockRegister).toHaveBeenCalledWith("ignacio@example.com", "123456"));
   });
 
   test("shows the storage error message when register rejects", async () => {
-    mockRegister.mockRejectedValue(new Error("Ese usuario ya existe"));
+    mockRegister.mockRejectedValue(new Error("Ese correo ya está registrado"));
     const props = buildProps();
     const { getByText, getByPlaceholderText } = await renderScreen(props);
 
-    await fireEvent.changeText(getByPlaceholderText("Usuario"), "Ignacio");
-    await fireEvent.changeText(getByPlaceholderText("Mínimo 4 caracteres"), "1234");
-    await fireEvent.changeText(getByPlaceholderText("Repetí la contraseña"), "1234");
+    await fireEvent.changeText(getByPlaceholderText("correo@ejemplo.com"), "ignacio@example.com");
+    await fireEvent.changeText(getByPlaceholderText("Mínimo 6 caracteres"), "123456");
+    await fireEvent.changeText(getByPlaceholderText("Repetí la contraseña"), "123456");
     await fireEvent.press(getByText("Registrarme"));
 
-    await waitFor(() => expect(getByText("Ese usuario ya existe")).toBeTruthy());
+    await waitFor(() => expect(getByText("Ese correo ya está registrado")).toBeTruthy());
   });
 
   test("navigates to Login when the login link is pressed", async () => {

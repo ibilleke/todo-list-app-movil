@@ -1,66 +1,69 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Crypto from "expo-crypto";
+import { FirebaseError } from "firebase/app";
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+  type User as FirebaseUser,
+} from "firebase/auth";
+import { auth } from "../firebase/firebaseConfig";
 import type { User } from "../types/User";
 
-const USERS_KEY = "@todolist/users";
-const SESSION_KEY = "@todolist/session";
-const MIN_PASSWORD_LENGTH = 4;
-
-
-export async function getUsers(): Promise<User[]> {
-  const raw = await AsyncStorage.getItem(USERS_KEY);
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw) as User[];
-  } catch {
-    return [];
-  }
-}
-
-export async function registerUser(username: string, password: string): Promise<User> {
-  const trimmed = username.trim();
-  if (!trimmed) {
-    throw new Error("El usuario es obligatorio");
-  }
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    throw new Error(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`);
-  }
-  const users = await getUsers();
-  const exists = users.some((u) => u.username.toLowerCase() === trimmed.toLowerCase());
-  if (exists) {
-    throw new Error("Ese usuario ya existe");
-  }
-  const user: User = {
-    id: Crypto.randomUUID(),
-    username: trimmed,
-    passwordHash: await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, password),
-    createdAt: new Date().toISOString(),
+function mapUser(firebaseUser: FirebaseUser): User {
+  return {
+    uid: firebaseUser.uid,
+    email: firebaseUser.email ?? "",
+    createdAt: firebaseUser.metadata.creationTime ?? new Date().toISOString(),
   };
-  await AsyncStorage.setItem(USERS_KEY, JSON.stringify([...users, user]));
-  return user;
 }
 
-export async function loginUser(username: string, password: string): Promise<User> {
-  const trimmed = username.trim();
-  const passwordHash = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, password);
-  const users = await getUsers();
-  const user = users.find(
-    (u) => u.username.toLowerCase() === trimmed.toLowerCase() && u.passwordHash === passwordHash
-  );
-  if (!user) {
-    throw new Error("Usuario o contraseña incorrectos");
+function mapAuthError(error: unknown): Error {
+  const code = error instanceof FirebaseError ? error.code : "";
+  switch (code) {
+    case "auth/invalid-email":
+      return new Error("El correo no es válido");
+    case "auth/email-already-in-use":
+      return new Error("Ese correo ya está registrado");
+    case "auth/weak-password":
+      return new Error("La contraseña debe tener al menos 6 caracteres");
+    case "auth/missing-password":
+      return new Error("La contraseña es obligatoria");
+    case "auth/invalid-credential":
+    case "auth/wrong-password":
+    case "auth/user-not-found":
+      return new Error("Correo o contraseña incorrectos");
+    case "auth/too-many-requests":
+      return new Error("Demasiados intentos. Probá de nuevo más tarde");
+    default:
+      return error instanceof Error ? error : new Error("No se pudo completar la operación");
   }
-  return user;
 }
 
-export async function getSession(): Promise<string | null> {
-  return AsyncStorage.getItem(SESSION_KEY);
+export async function registerUser(email: string, password: string): Promise<User> {
+  try {
+    const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+    return mapUser(credential.user);
+  } catch (error) {
+    throw mapAuthError(error);
+  }
 }
 
-export async function setSession(userId: string): Promise<void> {
-  await AsyncStorage.setItem(SESSION_KEY, userId);
+export async function loginUser(email: string, password: string): Promise<User> {
+  try {
+    const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
+    return mapUser(credential.user);
+  } catch (error) {
+    throw mapAuthError(error);
+  }
 }
 
-export async function clearSession(): Promise<void> {
-  await AsyncStorage.removeItem(SESSION_KEY);
+export async function logoutUser(): Promise<void> {
+  await signOut(auth);
+}
+
+/** Suscribe a los cambios de sesión de Firebase; devuelve la función para desuscribirse. */
+export function subscribeToAuthState(callback: (user: User | null) => void): () => void {
+  return onAuthStateChanged(auth, (firebaseUser) => {
+    callback(firebaseUser ? mapUser(firebaseUser) : null);
+  });
 }

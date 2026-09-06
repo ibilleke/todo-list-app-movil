@@ -30,7 +30,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "TaskForm">;
 
 export default function TaskFormScreen({ navigation, route }: Props) {
   const { user } = useAuth();
-  const userId = user!.id; // TaskFormScreen solo se monta dentro de MainNavigator (ver App.tsx), user siempre existe
+  const userId = user!.uid; // TaskFormScreen solo se monta dentro de MainNavigator (ver App.tsx), user siempre existe
   const taskId = route.params?.taskId;
   const [existingTask, setExistingTask] = useState<Task | null>(null);
   const [title, setTitle] = useState("");

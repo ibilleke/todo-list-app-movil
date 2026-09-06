@@ -21,7 +21,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Login">;
 
 export default function LoginScreen({ navigation }: Props) {
   const { login } = useAuth();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,9 +30,9 @@ export default function LoginScreen({ navigation }: Props) {
     setError(null);
     setIsSubmitting(true);
     try {
-      await login(username, password);
+      await login(email, password);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Usuario o contraseña incorrectos");
+      setError(err instanceof Error ? err.message : "Correo o contraseña incorrectos");
     } finally {
       setIsSubmitting(false);
     }
@@ -53,17 +53,18 @@ export default function LoginScreen({ navigation }: Props) {
             <Text style={authStyles.heading}>Bienvenido de nuevo</Text>
             <Text style={authStyles.subheading}>Ingresá para ver tus tareas.</Text>
 
-            <Text style={authStyles.label}>Usuario</Text>
+            <Text style={authStyles.label}>Correo electrónico</Text>
             <View style={authStyles.inputRow}>
-              <Ionicons name="person-outline" size={18} color={colors.textSecondary} />
+              <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
               <TextInput
                 style={authStyles.input}
-                value={username}
-                onChangeText={setUsername}
-                placeholder="Usuario"
+                value={email}
+                onChangeText={setEmail}
+                placeholder="correo@ejemplo.com"
                 placeholderTextColor={colors.textSecondary}
                 autoCapitalize="none"
                 autoCorrect={false}
+                keyboardType="email-address"
               />
             </View>
 
