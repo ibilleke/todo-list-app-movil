@@ -147,6 +147,7 @@ export default function TaskListScreen({ navigation }: Props) {
           <Pressable
             style={styles.emptyPrimaryButton}
             onPress={() => navigation.navigate("TaskForm", {})}
+            testID="empty-create-task-button"
           >
             <Text style={styles.emptyPrimaryButtonText}>Crear tu primera tarea</Text>
           </Pressable>
@@ -172,6 +173,7 @@ export default function TaskListScreen({ navigation }: Props) {
         style={styles.fab}
         onPress={() => navigation.navigate("TaskForm", {})}
         hitSlop={8}
+        testID="fab-add-task"
       >
         <Ionicons name="add" size={28} color={colors.surface} />
       </Pressable>

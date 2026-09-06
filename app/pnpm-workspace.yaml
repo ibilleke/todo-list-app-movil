@@ -1,3 +1,10 @@
 allowBuilds:
   '@firebase/util': false
+  appium: set this to true or false
+  edgedriver: set this to true or false
+  esbuild: set this to true or false
+  geckodriver: set this to true or false
   protobufjs: false
+minimumReleaseAgeExclude:
+  - appium-android-driver@14.0.8
+  - appium-uiautomator2-driver@8.6.1

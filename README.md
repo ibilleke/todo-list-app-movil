@@ -15,7 +15,7 @@ Aplicación móvil (React Native + Expo) para registrar y visualizar tareas pend
 | Persistencia | Local: `AsyncStorage` + `expo-file-system` |
 | API externa | JSONPlaceholder (import + sync de tareas vía POST) |
 | Gestor de paquetes | pnpm (obligatorio) |
-| Testing | Jest + jest-expo |
+| Testing | Jest + jest-expo (unitarios/componentes); Appium + WebdriverIO (E2E Android) |
 
 ## Funcionalidades
 
@@ -39,6 +39,7 @@ Aplicación móvil (React Native + Expo) para registrar y visualizar tareas pend
 ### Pruebas automatizadas
 - Jest + jest-expo, con mocks de `expo-camera`, `expo-location` y `firebase/auth`.
 - Cobertura de: captura de imágenes, obtención de ubicación GPS, guardado sin permisos, eliminación de tareas, storage/tareas, flujo de autenticación (Firebase Auth mockeado), integración con JSONPlaceholder.
+- E2E con Appium + WebdriverIO sobre APK Android real (UIAutomator2): smoke test de Login, navegación Login↔Register y validación de contraseñas de Register. Setup completo, prerrequisitos (Android SDK, emulador) y cómo correrlas: `docs/APPIUM.md`.
 - Evidencia manual de permisos (cámara y GPS) en emulador Android: documentada en `INFORME_PROYECTO.docx` (Escritorio).
 
 ## Modelo de datos
@@ -82,10 +83,11 @@ MainStack (con sesión)
 
 ```
 Examen2AppMovil/
-├── docs/                      # Brief, diseño y plan del proyecto
+├── docs/                      # Brief, diseño, plan y setup de Appium
 │   ├── BRIEF.md
 │   ├── DESIGN.md
-│   └── PLAN.md
+│   ├── PLAN.md
+│   └── APPIUM.md
 └── app/                       # Código fuente Expo/React Native
     ├── App.tsx                # Entry point, providers y stack raíz
     ├── index.ts
@@ -100,7 +102,10 @@ Examen2AppMovil/
     │   ├── storage/              # authStorage (Firebase Auth), taskStorage (AsyncStorage)
     │   ├── theme/                # Colores y estilos
     │   └── types/                # Task, User
-    └── __tests__/               # Tests Jest
+    ├── __tests__/               # Tests Jest (unitarios/componentes)
+    └── e2e/                     # Tests Appium + WebdriverIO (E2E Android)
+        ├── wdio.conf.ts
+        └── specs/
 ```
 
 ## Requisitos previos
@@ -131,9 +136,19 @@ pnpm android       # abre directo en emulador/dispositivo Android
 
 ## Testing
 
+Unitarios/componentes (Jest):
+
 ```bash
 cd app
 pnpm test
+```
+
+E2E (Appium + WebdriverIO, requiere Android SDK + emulador/dispositivo — ver `docs/APPIUM.md`):
+
+```bash
+cd app
+pnpm e2e:prebuild && cd android && ./gradlew assembleDebug && cd ..
+pnpm e2e
 ```
 
 ## Diseño

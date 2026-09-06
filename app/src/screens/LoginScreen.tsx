@@ -50,13 +50,14 @@ export default function LoginScreen({ navigation }: Props) {
         >
           <AuthHero />
           <View style={authStyles.sheet}>
-            <Text style={authStyles.heading}>Bienvenido de nuevo</Text>
+            <Text style={authStyles.heading} testID="login-heading">Bienvenido de nuevo</Text>
             <Text style={authStyles.subheading}>Ingresá para ver tus tareas.</Text>
 
             <Text style={authStyles.label}>Correo electrónico</Text>
             <View style={authStyles.inputRow}>
               <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
               <TextInput
+                testID="login-email-input"
                 style={authStyles.input}
                 value={email}
                 onChangeText={setEmail}
@@ -72,6 +73,7 @@ export default function LoginScreen({ navigation }: Props) {
             <View style={authStyles.inputRow}>
               <Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} />
               <TextInput
+                testID="login-password-input"
                 style={authStyles.input}
                 value={password}
                 onChangeText={setPassword}
@@ -81,17 +83,17 @@ export default function LoginScreen({ navigation }: Props) {
               />
             </View>
 
-            {error && <Text style={authStyles.error}>{error}</Text>}
+            {error && <Text style={authStyles.error} testID="login-error-text">{error}</Text>}
 
             {isSubmitting ? (
               <ActivityIndicator color={colors.primary} style={authStyles.primaryButton} />
             ) : (
-              <Pressable style={authStyles.primaryButton} onPress={handleSubmit}>
+              <Pressable style={authStyles.primaryButton} onPress={handleSubmit} testID="login-submit-button">
                 <Text style={authStyles.primaryButtonText}>Ingresar</Text>
               </Pressable>
             )}
 
-            <Pressable onPress={() => navigation.navigate("Register")} hitSlop={8}>
+            <Pressable onPress={() => navigation.navigate("Register")} hitSlop={8} testID="login-register-link">
               <Text style={authStyles.link}>
                 ¿No tenés cuenta? <Text style={authStyles.linkStrong}>Creá una</Text>
               </Text>

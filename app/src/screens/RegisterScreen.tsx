@@ -55,13 +55,14 @@ export default function RegisterScreen({ navigation }: Props) {
         >
           <AuthHero />
           <View style={authStyles.sheet}>
-            <Text style={authStyles.heading}>Creá tu cuenta</Text>
+            <Text style={authStyles.heading} testID="register-heading">Creá tu cuenta</Text>
             <Text style={authStyles.subheading}>Guardá tus tareas en este dispositivo.</Text>
 
             <Text style={authStyles.label}>Correo electrónico</Text>
             <View style={authStyles.inputRow}>
               <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
               <TextInput
+                testID="register-email-input"
                 style={authStyles.input}
                 value={email}
                 onChangeText={setEmail}
@@ -77,6 +78,7 @@ export default function RegisterScreen({ navigation }: Props) {
             <View style={authStyles.inputRow}>
               <Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} />
               <TextInput
+                testID="register-password-input"
                 style={authStyles.input}
                 value={password}
                 onChangeText={setPassword}
@@ -90,6 +92,7 @@ export default function RegisterScreen({ navigation }: Props) {
             <View style={authStyles.inputRow}>
               <Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} />
               <TextInput
+                testID="register-confirm-password-input"
                 style={authStyles.input}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
@@ -99,17 +102,17 @@ export default function RegisterScreen({ navigation }: Props) {
               />
             </View>
 
-            {error && <Text style={authStyles.error}>{error}</Text>}
+            {error && <Text style={authStyles.error} testID="register-error-text">{error}</Text>}
 
             {isSubmitting ? (
               <ActivityIndicator color={colors.primary} style={authStyles.primaryButton} />
             ) : (
-              <Pressable style={authStyles.primaryButton} onPress={handleSubmit}>
+              <Pressable style={authStyles.primaryButton} onPress={handleSubmit} testID="register-submit-button">
                 <Text style={authStyles.primaryButtonText}>Registrarme</Text>
               </Pressable>
             )}
 
-            <Pressable onPress={() => navigation.navigate("Login")} hitSlop={8}>
+            <Pressable onPress={() => navigation.navigate("Login")} hitSlop={8} testID="register-login-link">
               <Text style={authStyles.link}>
                 ¿Ya tenés cuenta? <Text style={authStyles.linkStrong}>Ingresá</Text>
               </Text>

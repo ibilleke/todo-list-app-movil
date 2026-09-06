@@ -179,6 +179,7 @@ export default function TaskFormScreen({ navigation, route }: Props) {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.label}>Título</Text>
       <TextInput
+        testID="task-title-input"
         style={styles.input}
         value={title}
         onChangeText={setTitle}
@@ -188,6 +189,7 @@ export default function TaskFormScreen({ navigation, route }: Props) {
 
       <Text style={styles.label}>Descripción</Text>
       <TextInput
+        testID="task-description-input"
         style={[styles.input, styles.textarea]}
         value={description}
         onChangeText={setDescription}
@@ -235,12 +237,12 @@ export default function TaskFormScreen({ navigation, route }: Props) {
         />
       </View>
 
-      <Pressable style={styles.saveButton} onPress={handleSave}>
+      <Pressable style={styles.saveButton} onPress={handleSave} testID="task-save-button">
         <Text style={styles.saveButtonText}>Guardar</Text>
       </Pressable>
 
       {existingTask && (
-        <Pressable style={styles.deleteButton} onPress={handleDelete}>
+        <Pressable style={styles.deleteButton} onPress={handleDelete} testID="task-delete-button">
           <Text style={styles.deleteButtonText}>Eliminar</Text>
         </Pressable>
       )}
